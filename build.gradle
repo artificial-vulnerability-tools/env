@@ -1,33 +1,33 @@
-
 plugins {
-    id 'java'
-    id 'application'
+  id 'java'
+  id 'application'
 }
 
 // Define the main class for the application
 mainClassName = 'com.githhub.avt.env.Main'
 
 dependencies {
-    compile group: 'io.vertx', name: 'vertx-core', version: '3.5.4'
-    compile group: 'io.vertx', name: 'vertx-web', version: '3.5.4'
-    compile group: 'io.vertx', name: 'vertx-web-client', version: '3.5.4'
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-    testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
-    testCompile group: 'io.vertx', name: 'vertx-unit', version: '3.5.4'
-    testCompile 'junit:junit:4.12'
+  compile group: 'io.vertx', name: 'vertx-core', version: '3.5.4'
+  compile group: 'io.vertx', name: 'vertx-web', version: '3.5.4'
+  compile group: 'io.vertx', name: 'vertx-web-client', version: '3.5.4'
+  compile 'org.reflections:reflections:0.9.11'
+  compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
+  testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
+  testCompile group: 'io.vertx', name: 'vertx-unit', version: '3.5.4'
+  testCompile 'junit:junit:4.12'
 }
 
 repositories {
-    jcenter()
-    mavenLocal()
-    mavenCentral()
+  jcenter()
+  mavenLocal()
+  mavenCentral()
 }
 
 task packageTests(type: Jar) {
-    baseName = project.name + '-test-fat'
-    from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-    from sourceSets.test.allSource
-    from sourceSets.main.allSource
+  baseName = project.name + '-test-fat'
+  from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  from sourceSets.test.output
+  from sourceSets.main.output
 }
 
 tasks.test.dependsOn(packageTests)

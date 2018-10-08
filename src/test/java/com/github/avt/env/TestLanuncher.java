@@ -18,10 +18,15 @@
 package com.github.avt.env;
 
 import com.github.avt.env.extend.Launcher;
+import io.vertx.core.Vertx;
 
 public class TestLanuncher extends Launcher {
 
+  public static final String TEST_FILE_NAME = "test-file.hello";
+
   @Override
   public void launch() {
+    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME);
   }
 }
+

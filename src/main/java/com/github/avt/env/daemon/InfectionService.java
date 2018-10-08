@@ -21,6 +21,13 @@ import io.vertx.core.AbstractVerticle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.Enumeration;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
 public class InfectionService extends AbstractVerticle {
 
   public static final String INFECTION_ADDRESS = "infection";
@@ -28,10 +35,37 @@ public class InfectionService extends AbstractVerticle {
   private static final Logger log = LoggerFactory.getLogger(InfectionService.class);
 
   @Override
-  public void start() throws Exception {
+  public void start() {
     vertx.eventBus().consumer(INFECTION_ADDRESS, event -> {
       var fileName = (String) event.body();
-      log.info("Jar file to analyze" + fileName);
+      log.info("Jar file to analyze:" + fileName);
+      try {
+        JarFile jarFile = new JarFile(fileName);
+        Enumeration<JarEntry> e = jarFile.entries();
+
+        URL[] urls = {new URL("jar:file:" + fileName + "!/")};
+        URLClassLoader cl = URLClassLoader.newInstance(urls);
+
+        while (e.hasMoreElements()) {
+          JarEntry je = e.nextElement();
+          if (je.isDirectory() || !je.getName().endsWith(".class")) {
+            continue;
+          }
+          // -6 because of .class
+          String className = je.getName().substring(0, je.getName().length() - 6);
+          className = className.replace('/', '.');
+          try {
+            Class<?> aClass = cl.loadClass(className);
+            Class<?> superclass = aClass.getSuperclass();
+            log.info("class " + aClass.getName() + " is loaded. Super class is: " + superclass.getName());
+
+          } catch (Throwable exp) {
+            log.error("Not able to load: " + className);
+          }
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     });
   }
 }

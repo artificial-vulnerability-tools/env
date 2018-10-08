@@ -41,7 +41,7 @@ public class UploadAndLaunchTest {
     Vertx vertx = Vertx.vertx();
     vertx.deployVerticle(new AVTService());
     WebClient webClient = WebClient.create(vertx);
-    Async async = testContext.async();
+    Async async = testContext.async(2);
     vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
       if (fileRes.succeeded()) {
         ReadStream<Buffer> fileStream = fileRes.result();
@@ -53,6 +53,14 @@ public class UploadAndLaunchTest {
               async.countDown();
             }
           });
+      }
+    });
+
+    vertx.setPeriodic(100, timerId -> {
+      boolean contains = vertx.fileSystem().readDirBlocking("out").contains("test_file.hello");
+      if (contains) {
+        vertx.cancelTimer(timerId);
+        async.countDown();
       }
     });
   }
