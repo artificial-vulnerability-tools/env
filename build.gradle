@@ -28,6 +28,7 @@ task packageTests(type: Jar) {
   from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
   from sourceSets.test.output
   from sourceSets.main.output
+  from 'src/main/resources/run_virus.sh'
 }
 
 tasks.test.dependsOn(packageTests)

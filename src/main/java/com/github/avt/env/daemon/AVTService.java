@@ -29,6 +29,7 @@ public class AVTService extends AbstractVerticle {
 
   public static final int PORT = 2222;
   public static final String DIR = ".avtenv";
+  public static final String SEPARATOR = System.getProperty("file.separator");
 
   private boolean isInfected = false;
 
@@ -42,10 +43,16 @@ public class AVTService extends AbstractVerticle {
     var router = Router.router(vertx);
     router.post("/infect").handler(routingContext -> {
       routingContext.request().bodyHandler(body -> {
-        var fileNameToWrite = fileName();
-        vertx.fileSystem().writeFile(fileNameToWrite, body, done -> {
-          vertx.eventBus().send(INFECTION_ADDRESS, fileNameToWrite);
-          routingContext.response().end("DONE");
+        var dirName = dirName();
+        var dirNameToCreate = DIR + SEPARATOR + dirName;
+        var jarFileName = dirNameToCreate + SEPARATOR + "uploaded.jar";
+        vertx.fileSystem().mkdir(dirNameToCreate, dirCreated -> {
+          if (dirCreated.succeeded()) {
+            vertx.fileSystem().writeFile(jarFileName, body, done -> {
+              vertx.eventBus().send(INFECTION_ADDRESS, jarFileName);
+              routingContext.response().end("DONE");
+            });
+          }
         });
       });
     });
@@ -54,9 +61,9 @@ public class AVTService extends AbstractVerticle {
     server.requestHandler(router::accept).listen(PORT);
   }
 
-  private String fileName() {
+  private String dirName() {
     var dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd__HH_mm_ss");
     var now = LocalDateTime.now();
-    return DIR + System.getProperty("file.separator") + dtf.format(now) + ".jar";
+    return dtf.format(now);
   }
 }
