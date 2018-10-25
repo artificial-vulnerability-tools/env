@@ -25,13 +25,14 @@ import java.time.format.DateTimeFormatter;
 
 import static com.github.avt.env.daemon.InfectionService.INFECTION_ADDRESS;
 
+/**
+ * Artificial venerability services. Aimed to expose an endpoint for a virus.
+ */
 public class AVTService extends AbstractVerticle {
 
   public static final int PORT = 2222;
   public static final String DIR = ".avtenv";
   public static final String SEPARATOR = System.getProperty("file.separator");
-
-  private boolean isInfected = false;
 
   @Override
   public void start() {

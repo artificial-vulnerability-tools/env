@@ -18,6 +18,7 @@
 package com.github.avt.env.daemon;
 
 import com.github.avt.env.extend.Launcher;
+import com.github.avt.env.process.ProcessMap;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.file.CopyOptions;
 import org.slf4j.Logger;
@@ -37,12 +38,18 @@ import java.util.jar.JarFile;
 
 import static com.github.avt.env.daemon.AVTService.SEPARATOR;
 
+
+/**
+ * Main idea of the service is to obtain a path to uploaded jar file and run the virus inside.
+ */
 public class InfectionService extends AbstractVerticle {
 
   public static final String INFECTION_ADDRESS = "infection";
   public static final String VIRUS_SCRIPT_NAME = "run_virus.sh";
 
   private static final Logger log = LoggerFactory.getLogger(InfectionService.class);
+
+  private ProcessMap currentProcesses = new ProcessMap();
 
   @Override
   public void start() {
@@ -112,12 +119,11 @@ public class InfectionService extends AbstractVerticle {
       args.add(className);
       ProcessBuilder pb = new ProcessBuilder(args);
       pb.directory(bashFile.getParentFile());
-      pb.redirectErrorStream(true);
       Process p = pb.start();
-      int code = p.waitFor();
-      log.info("code " + code);
-    } catch (IOException | InterruptedException e) {
-      e.printStackTrace();
+      ProcessHandle processHandle = p.toHandle();
+      currentProcesses.put(processHandle.pid(), processHandle);
+    } catch (IOException e) {
+      log.error("A problem with virus running occurred", e);
     }
   }
 }

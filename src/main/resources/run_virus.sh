@@ -16,4 +16,4 @@ javac -cp uploaded.jar Main.java
 jar cf jar_with_main.jar Main.class
 rm Main.java
 rm Main.class
-java -cp jar_with_main.jar:uploaded.jar Main
+java -cp jar_with_main.jar:uploaded.jar Main &> log.txt

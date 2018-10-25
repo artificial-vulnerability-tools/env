@@ -31,6 +31,13 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static com.github.avt.env.TestLanuncher.TEST_FILE_NAME;
+import static com.github.avt.env.daemon.AVTService.DIR;
+
 @RunWith(VertxUnitRunner.class)
 public class UploadAndLaunchTest {
 
@@ -39,6 +46,8 @@ public class UploadAndLaunchTest {
   @Test
   public void uploadAndRun(TestContext testContext) {
     Vertx vertx = Vertx.vertx();
+    List<String> startTestDirs = vertx.fileSystem().readDirBlocking(DIR);
+
     vertx.deployVerticle(new AVTService());
     WebClient webClient = WebClient.create(vertx);
     Async async = testContext.async(2);
@@ -57,10 +66,18 @@ public class UploadAndLaunchTest {
     });
 
     vertx.setPeriodic(100, timerId -> {
-      boolean contains = vertx.fileSystem().readDirBlocking("out").contains("test_file.hello");
-      if (contains) {
-        vertx.cancelTimer(timerId);
-        async.countDown();
+      List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
+      currentDirs.removeAll(startTestDirs);
+      if (currentDirs.size() == 1) {
+        List<String> binFiles = vertx.fileSystem()
+          .readDirBlocking(currentDirs.get(0))
+          .stream().map(File::new)
+          .map(File::getName)
+          .collect(Collectors.toList());
+        if (binFiles.contains(TEST_FILE_NAME)) {
+          vertx.cancelTimer(timerId);
+          async.countDown();
+        }
       }
     });
   }
