@@ -26,7 +26,7 @@ import java.time.format.DateTimeFormatter;
 import static com.github.avt.env.daemon.InfectionService.INFECTION_ADDRESS;
 
 /**
- * Artificial venerability services. Aimed to expose an endpoint for a virus.
+ * Artificial vulnerability services. Aimed to expose an endpoint for a virus.
  */
 public class AVTService extends AbstractVerticle {
 
