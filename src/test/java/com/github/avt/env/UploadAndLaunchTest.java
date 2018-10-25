@@ -35,7 +35,7 @@ import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.github.avt.env.TestLanuncher.TEST_FILE_NAME;
+import static com.github.avt.env.TestLauncher.TEST_FILE_NAME;
 import static com.github.avt.env.daemon.AVTService.DIR;
 
 @RunWith(VertxUnitRunner.class)

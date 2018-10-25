@@ -20,19 +20,13 @@ package com.github.avt.env;
 import com.github.avt.env.extend.Launcher;
 import io.vertx.core.Vertx;
 
-import java.io.File;
-
-import static com.github.avt.env.daemon.AVTService.SEPARATOR;
-
-public class TestLanuncher extends Launcher {
+public class TestLauncher extends Launcher {
 
   public static final String TEST_FILE_NAME = "test-file.hello";
 
   @Override
   public void launch() {
-    File file = new File(".");
-    String absolutePath = file.getParentFile().getParentFile().getAbsolutePath();
-    Vertx.vertx().fileSystem().createFileBlocking(absolutePath + SEPARATOR + TEST_FILE_NAME);
+    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME);
   }
 }
 

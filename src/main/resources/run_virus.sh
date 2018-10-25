@@ -2,6 +2,8 @@
 
 VIRUS_CLASS=$1
 
+echo ${VIRUS_CLASS} > virus_class_name.txt
+
 cat >Main.java <<EOL
 import $VIRUS_CLASS;
 
