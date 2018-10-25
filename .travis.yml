@@ -1,7 +1,5 @@
 language: java
 jdk:
-  - openjdk9
-  - openjdk10
   - openjdk11
 
 before_cache:
@@ -13,4 +11,4 @@ cache:
     - $HOME/.gradle/wrapper/
     -
 script:
-  - ./gradlew test
+  - ./gradlew test --info
