@@ -46,39 +46,39 @@ public class UploadAndLaunchTest {
   @Test
   public void uploadAndRun(TestContext testContext) {
     Vertx vertx = Vertx.vertx();
-    List<String> startTestDirs = vertx.fileSystem().readDirBlocking(DIR);
-
-    vertx.deployVerticle(new AVTService());
-    WebClient webClient = WebClient.create(vertx);
     Async async = testContext.async(2);
-    vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
-      if (fileRes.succeeded()) {
-        ReadStream<Buffer> fileStream = fileRes.result();
-        webClient
-          .post(AVTService.PORT, "localhost", "/infect")
-          .sendStream(fileStream, ar -> {
-            if (ar.succeeded()) {
-              log.info("Jar uploaded");
-              async.countDown();
-            }
-          });
-      }
-    });
-
-    vertx.setPeriodic(100, timerId -> {
-      List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
-      currentDirs.removeAll(startTestDirs);
-      if (currentDirs.size() == 1) {
-        List<String> binFiles = vertx.fileSystem()
-          .readDirBlocking(currentDirs.get(0))
-          .stream().map(File::new)
-          .map(File::getName)
-          .collect(Collectors.toList());
-        if (binFiles.contains(TEST_FILE_NAME)) {
-          vertx.cancelTimer(timerId);
-          async.countDown();
+    vertx.deployVerticle(new AVTService(), deployed -> {
+      List<String> startTestDirs = vertx.fileSystem().readDirBlocking(DIR);
+      WebClient webClient = WebClient.create(vertx);
+      vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
+        if (fileRes.succeeded()) {
+          ReadStream<Buffer> fileStream = fileRes.result();
+          webClient
+            .post(AVTService.PORT, "localhost", "/infect")
+            .sendStream(fileStream, ar -> {
+              if (ar.succeeded()) {
+                log.info("Jar uploaded");
+                async.countDown();
+              }
+            });
         }
-      }
+      });
+
+      vertx.setPeriodic(100, timerId -> {
+        List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
+        currentDirs.removeAll(startTestDirs);
+        if (currentDirs.size() == 1) {
+          List<String> binFiles = vertx.fileSystem()
+            .readDirBlocking(currentDirs.get(0))
+            .stream().map(File::new)
+            .map(File::getName)
+            .collect(Collectors.toList());
+          if (binFiles.contains(TEST_FILE_NAME)) {
+            vertx.cancelTimer(timerId);
+            async.countDown();
+          }
+        }
+      });
     });
   }
 }
