@@ -17,7 +17,14 @@
 
 package com.github.avt.env.extend;
 
+/**
+ * A base class for extending. Should be used by any virus.
+ */
 public abstract class Launcher {
 
   public abstract void launch();
+
+  public void start() {
+    launch();
+  }
 }

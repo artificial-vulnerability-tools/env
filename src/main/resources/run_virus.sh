@@ -9,7 +9,7 @@ import $VIRUS_CLASS;
 
 public class Main {
   public static void main(String[] args) {
-    new $VIRUS_CLASS().launch();
+    new $VIRUS_CLASS().start();
   }
 }
 EOL
