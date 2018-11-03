@@ -60,7 +60,7 @@ public class AVTService extends AbstractVerticle {
         vertx.fileSystem().mkdir(dirNameToCreate, dirCreated -> {
           if (dirCreated.succeeded()) {
             vertx.fileSystem().writeFile(jarFileName, body, done -> {
-              vertx.eventBus().send(INFECTION_ADDRESS, jarFileName);
+              vertx.eventBus().send(INFECTION_ADDRESS + ":" + actualPort, jarFileName);
               routingContext.response().end("DONE");
             });
           }
