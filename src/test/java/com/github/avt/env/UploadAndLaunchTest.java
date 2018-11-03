@@ -49,8 +49,8 @@ public class UploadAndLaunchTest {
   public void uploadAndRun(TestContext testContext) {
     Vertx vertx = Vertx.vertx();
     Async async = testContext.async(2);
+    List<String> startTestDirs = vertx.fileSystem().readDirBlocking(DIR);
     vertx.deployVerticle(new AVTService(), deployed -> {
-      List<String> startTestDirs = vertx.fileSystem().readDirBlocking(DIR);
       WebClient webClient = WebClient.create(vertx);
       vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
         if (fileRes.succeeded()) {
@@ -77,16 +77,21 @@ public class UploadAndLaunchTest {
             .collect(Collectors.toList());
 
           if (files.contains(TEST_FILE_NAME)) {
-            printLogFile(vertx, currentFiles.get(0));
             vertx.cancelTimer(timerId);
             async.countDown();
           }
         }
       });
     });
+
+    async.await(10_000);
+    List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
+    currentDirs.removeAll(startTestDirs);
+    printLogFile(vertx, currentDirs.get(0));
   }
 
   private void printLogFile(Vertx vertx, String currentDir) {
+    log.info("Dir with log file: " + currentDir);
     File logTxtFile = vertx.fileSystem()
       .readDirBlocking(currentDir)
       .stream()
