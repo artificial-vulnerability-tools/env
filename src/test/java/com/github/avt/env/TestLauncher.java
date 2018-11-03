@@ -18,7 +18,6 @@
 package com.github.avt.env;
 
 import com.github.avt.env.extend.Launcher;
-import com.github.avt.env.spreading.SpreadingPolicy;
 import io.vertx.core.Vertx;
 
 public class TestLauncher extends Launcher {
@@ -28,11 +27,6 @@ public class TestLauncher extends Launcher {
   @Override
   public void launch() {
     Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME);
-  }
-
-  @Override
-  public SpreadingPolicy spreadingPolicy() {
-    return null;
   }
 }
 
