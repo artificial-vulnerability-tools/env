@@ -86,10 +86,13 @@ public class UploadAndLaunchTest {
       });
     });
 
+    vertx.setTimer(9_000, event -> {
+      List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
+      currentDirs.removeAll(startTestDirs.get());
+      printLogFile(vertx, currentDirs.get(0));
+    });
+
     async.await(10_000);
-    List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
-    currentDirs.removeAll(startTestDirs.get());
-    printLogFile(vertx, currentDirs.get(0));
   }
 
   private void printLogFile(Vertx vertx, String currentDir) {
