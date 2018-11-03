@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.github.avt.env.TestLauncher.TEST_FILE_NAME;
-import static com.github.avt.env.daemon.AVTService.DIR;
+import static com.github.avt.env.daemon.AVTService.AVT_HOME_DIR;
 
 @RunWith(VertxUnitRunner.class)
 public class UploadAndLaunchTest {
@@ -52,13 +52,13 @@ public class UploadAndLaunchTest {
     Async async = testContext.async(2);
     AtomicReference<List<String>> startTestDirs = new AtomicReference<>(null);
     vertx.deployVerticle(new AVTService(), deployed -> {
-      startTestDirs.set(vertx.fileSystem().readDirBlocking(DIR));
+      startTestDirs.set(vertx.fileSystem().readDirBlocking(AVT_HOME_DIR));
       WebClient webClient = WebClient.create(vertx);
       vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
         if (fileRes.succeeded()) {
           ReadStream<Buffer> fileStream = fileRes.result();
           webClient
-            .post(AVTService.PORT, "localhost", "/infect")
+            .post(AVTService.DEFAULT_PORT, "localhost", "/infect")
             .sendStream(fileStream, ar -> {
               if (ar.succeeded()) {
                 log.info("Jar uploaded");
@@ -69,7 +69,7 @@ public class UploadAndLaunchTest {
       });
 
       vertx.setPeriodic(100, timerId -> {
-        List<String> currentFiles = vertx.fileSystem().readDirBlocking(DIR);
+        List<String> currentFiles = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
         currentFiles.removeAll(startTestDirs.get());
         if (currentFiles.size() == 1) {
           List<String> files = vertx.fileSystem()
@@ -87,7 +87,7 @@ public class UploadAndLaunchTest {
     });
 
     vertx.setTimer(9_000, event -> {
-      List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
+      List<String> currentDirs = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
       currentDirs.removeAll(startTestDirs.get());
       printLogFile(vertx, currentDirs.get(0));
     });

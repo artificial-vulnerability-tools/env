@@ -30,22 +30,32 @@ import static com.github.avt.env.daemon.InfectionService.INFECTION_ADDRESS;
  */
 public class AVTService extends AbstractVerticle {
 
-  public static final int PORT = 2222;
-  public static final String DIR = ".avtenv";
+  public static final int DEFAULT_PORT = 2222;
+  public static final String AVT_HOME_DIR = ".avtenv";
   public static final String SEPARATOR = System.getProperty("file.separator");
+
+  private final Integer actualPort;
+
+  public AVTService() {
+    this(DEFAULT_PORT);
+  }
+
+  public AVTService(Integer port) {
+    actualPort = port;
+  }
 
   @Override
   public void start() {
-    var dirExist = vertx.fileSystem().existsBlocking(DIR);
+    var dirExist = vertx.fileSystem().existsBlocking(AVT_HOME_DIR);
     if (!dirExist) {
-      vertx.fileSystem().mkdirBlocking(DIR);
+      vertx.fileSystem().mkdirBlocking(AVT_HOME_DIR);
     }
     var server = vertx.createHttpServer();
     var router = Router.router(vertx);
     router.post("/infect").handler(routingContext -> {
       routingContext.request().bodyHandler(body -> {
         var dirName = dirName();
-        var dirNameToCreate = DIR + SEPARATOR + dirName;
+        var dirNameToCreate = AVT_HOME_DIR + SEPARATOR + dirName;
         var jarFileName = dirNameToCreate + SEPARATOR + "uploaded.jar";
         vertx.fileSystem().mkdir(dirNameToCreate, dirCreated -> {
           if (dirCreated.succeeded()) {
@@ -58,8 +68,8 @@ public class AVTService extends AbstractVerticle {
       });
     });
 
-    vertx.deployVerticle(new InfectionService());
-    server.requestHandler(router::accept).listen(PORT);
+    vertx.deployVerticle(new InfectionService(actualPort));
+    server.requestHandler(router::accept).listen(actualPort);
   }
 
   private String dirName() {

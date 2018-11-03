@@ -51,9 +51,15 @@ public class InfectionService extends AbstractVerticle {
 
   private ProcessMap currentProcesses = new ProcessMap();
 
+  private final Integer avtServicePort;
+
+  public InfectionService(Integer avtServicePort) {
+    this.avtServicePort = avtServicePort;
+  }
+
   @Override
   public void start() {
-    vertx.eventBus().consumer(INFECTION_ADDRESS, event -> {
+    vertx.eventBus().consumer(INFECTION_ADDRESS + ":" + avtServicePort, event -> {
       var obtainedJarFile = new File((String) event.body());
       log.info("Jar file to analyze:" + obtainedJarFile);
       try {
