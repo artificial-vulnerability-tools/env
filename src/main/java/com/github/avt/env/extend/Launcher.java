@@ -18,6 +18,7 @@
 package com.github.avt.env.extend;
 
 import com.github.avt.env.spreading.SpreadingPolicy;
+import com.github.avt.env.spreading.impl.PeerToPeerSpreadingPolicy;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 
@@ -34,7 +35,9 @@ public abstract class Launcher {
   /**
    * Related to the way how the virus spreads across the environment.
    */
-  public abstract SpreadingPolicy spreadingPolicy();
+  public SpreadingPolicy spreadingPolicy() {
+    return new PeerToPeerSpreadingPolicy();
+  }
 
   private Vertx vertx = Vertx.vertx();
 

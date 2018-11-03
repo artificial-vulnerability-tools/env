@@ -19,7 +19,7 @@ package com.github.avt.env.spreading.impl;
 
 import com.github.avt.env.spreading.SpreadingPolicy;
 
-public class SimpleSpreadingPolicy extends SpreadingPolicy {
+public class PeerToPeerSpreadingPolicy implements SpreadingPolicy {
 
   @Override
   public void spreadTo(String host) {
