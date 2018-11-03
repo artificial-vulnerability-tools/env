@@ -46,7 +46,7 @@ public abstract class Launcher {
   public void start() {
     var httpServer = vertx.createHttpServer();
     var router = Router.router(vertx);
-    router.post("spread-to").handler(ctx -> {
+    router.post("/spread-to").handler(ctx -> {
       ctx.request().bodyHandler(body -> {
         JsonObject json = body.toJsonObject();
         String uri = json.getString("uri");
