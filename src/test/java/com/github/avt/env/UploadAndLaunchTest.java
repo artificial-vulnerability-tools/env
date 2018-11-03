@@ -32,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -65,20 +67,40 @@ public class UploadAndLaunchTest {
       });
 
       vertx.setPeriodic(100, timerId -> {
-        List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
-        currentDirs.removeAll(startTestDirs);
-        if (currentDirs.size() == 1) {
-          List<String> binFiles = vertx.fileSystem()
-            .readDirBlocking(currentDirs.get(0))
+        List<String> currentFiles = vertx.fileSystem().readDirBlocking(DIR);
+        currentFiles.removeAll(startTestDirs);
+        if (currentFiles.size() == 1) {
+          List<String> files = vertx.fileSystem()
+            .readDirBlocking(currentFiles.get(0))
             .stream().map(File::new)
             .map(File::getName)
             .collect(Collectors.toList());
-          if (binFiles.contains(TEST_FILE_NAME)) {
+
+          if (files.contains(TEST_FILE_NAME)) {
+            printLogFile(vertx, currentFiles.get(0));
             vertx.cancelTimer(timerId);
             async.countDown();
           }
         }
       });
     });
+  }
+
+  private void printLogFile(Vertx vertx, String currentDir) {
+    File logTxtFile = vertx.fileSystem()
+      .readDirBlocking(currentDir)
+      .stream()
+      .map(File::new)
+      .filter(file -> file.getName().endsWith("log.txt"))
+      .findAny()
+      .get();
+    try {
+      Files.readAllLines(logTxtFile.toPath()).forEach(line -> {
+        log.info("VIRUS: " + line);
+      });
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 }
