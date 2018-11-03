@@ -17,14 +17,38 @@
 
 package com.github.avt.env.extend;
 
+import com.github.avt.env.spreading.SpreadingPolicy;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.Router;
+
 /**
  * A base class for extending. Should be used by any virus.
  */
 public abstract class Launcher {
 
+  /**
+   * You should override this method. Virus code should be executed inside this method.
+   */
   public abstract void launch();
 
+  /**
+   * Related to the way how the virus spreads across the environment.
+   */
+  public abstract SpreadingPolicy spreadingPolicy();
+
+  private Vertx vertx = Vertx.vertx();
+
+  public static final Integer VIRUS_PORT = 2223;
+
   public void start() {
+    var httpServer = vertx.createHttpServer();
+    var router = Router.router(vertx);
+    router.post("spread-to").handler(ctx -> {
+      ctx.request().bodyHandler(body -> {
+
+      });
+    });
+    httpServer.requestHandler(router::accept).listen(VIRUS_PORT);
     launch();
   }
 }

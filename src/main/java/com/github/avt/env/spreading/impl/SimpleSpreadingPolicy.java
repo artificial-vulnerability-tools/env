@@ -15,24 +15,15 @@
  * limitations under the License.
  */
 
-package com.github.avt.env;
+package com.github.avt.env.spreading.impl;
 
-import com.github.avt.env.extend.Launcher;
 import com.github.avt.env.spreading.SpreadingPolicy;
-import io.vertx.core.Vertx;
 
-public class TestLauncher extends Launcher {
-
-  public static final String TEST_FILE_NAME = "test-file.hello";
+public class SimpleSpreadingPolicy extends SpreadingPolicy {
 
   @Override
-  public void launch() {
-    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME);
+  public void spreadTo(String host) {
+
   }
 
-  @Override
-  public SpreadingPolicy spreadingPolicy() {
-    return null;
-  }
 }
-

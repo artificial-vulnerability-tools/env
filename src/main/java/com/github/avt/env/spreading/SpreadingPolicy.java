@@ -15,24 +15,15 @@
  * limitations under the License.
  */
 
-package com.github.avt.env;
+package com.github.avt.env.spreading;
 
-import com.github.avt.env.extend.Launcher;
-import com.github.avt.env.spreading.SpreadingPolicy;
-import io.vertx.core.Vertx;
+/**
+ * Defines the way a virus can spread across the environment.
+ */
+public interface SpreadingPolicy {
 
-public class TestLauncher extends Launcher {
-
-  public static final String TEST_FILE_NAME = "test-file.hello";
-
-  @Override
-  public void launch() {
-    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME);
-  }
-
-  @Override
-  public SpreadingPolicy spreadingPolicy() {
-    return null;
-  }
+  /**
+   * @param host where to spread. Examples: 'google.com:80', 'localhost:2222'.
+   */
+  void spreadTo(String host);
 }
-
