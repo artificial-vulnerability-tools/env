@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.github.avt.env.TestLauncher.TEST_FILE_NAME;
@@ -49,8 +50,9 @@ public class UploadAndLaunchTest {
   public void uploadAndRun(TestContext testContext) {
     Vertx vertx = Vertx.vertx();
     Async async = testContext.async(2);
-    List<String> startTestDirs = vertx.fileSystem().readDirBlocking(DIR);
+    AtomicReference<List<String>> startTestDirs = new AtomicReference<>(null);
     vertx.deployVerticle(new AVTService(), deployed -> {
+      startTestDirs.set(vertx.fileSystem().readDirBlocking(DIR));
       WebClient webClient = WebClient.create(vertx);
       vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
         if (fileRes.succeeded()) {
@@ -68,7 +70,7 @@ public class UploadAndLaunchTest {
 
       vertx.setPeriodic(100, timerId -> {
         List<String> currentFiles = vertx.fileSystem().readDirBlocking(DIR);
-        currentFiles.removeAll(startTestDirs);
+        currentFiles.removeAll(startTestDirs.get());
         if (currentFiles.size() == 1) {
           List<String> files = vertx.fileSystem()
             .readDirBlocking(currentFiles.get(0))
@@ -86,7 +88,7 @@ public class UploadAndLaunchTest {
 
     async.await(10_000);
     List<String> currentDirs = vertx.fileSystem().readDirBlocking(DIR);
-    currentDirs.removeAll(startTestDirs);
+    currentDirs.removeAll(startTestDirs.get());
     printLogFile(vertx, currentDirs.get(0));
   }
 
