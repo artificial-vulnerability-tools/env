@@ -17,13 +17,9 @@
 
 package com.github.avt.env.spreading;
 
-/**
- * Defines the way a virus can spread across the environment.
- */
-public interface SpreadingPolicy {
+public interface Node {
 
-  /**
-   * @param node where to spread. Examples: 'google.com:80', 'localhost:2222'.
-   */
-  void spreadTo(Node node);
+  String host();
+
+  Integer port();
 }

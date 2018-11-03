@@ -18,8 +18,10 @@
 package com.github.avt.env.extend;
 
 import com.github.avt.env.spreading.SpreadingPolicy;
+import com.github.avt.env.spreading.impl.DefaultNode;
 import com.github.avt.env.spreading.impl.PeerToPeerSpreadingPolicy;
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 
 /**
@@ -35,9 +37,7 @@ public abstract class Launcher {
   /**
    * Related to the way how the virus spreads across the environment.
    */
-  public SpreadingPolicy spreadingPolicy() {
-    return new PeerToPeerSpreadingPolicy();
-  }
+  public SpreadingPolicy spreadingPolicy = new PeerToPeerSpreadingPolicy();
 
   private Vertx vertx = Vertx.vertx();
 
@@ -48,7 +48,10 @@ public abstract class Launcher {
     var router = Router.router(vertx);
     router.post("spread-to").handler(ctx -> {
       ctx.request().bodyHandler(body -> {
-
+        JsonObject json = body.toJsonObject();
+        String uri = json.getString("uri");
+        String[] split = uri.split(":");
+        spreadingPolicy.spreadTo(new DefaultNode(split[0], Integer.parseInt(split[1])));
       });
     });
     httpServer.requestHandler(router::accept).listen(VIRUS_PORT);

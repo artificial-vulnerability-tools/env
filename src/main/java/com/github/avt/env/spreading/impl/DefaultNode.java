@@ -18,26 +18,40 @@
 package com.github.avt.env.spreading.impl;
 
 import com.github.avt.env.spreading.Node;
-import com.github.avt.env.spreading.SpreadingPolicy;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Objects;
 
-public class PeerToPeerSpreadingPolicy implements SpreadingPolicy {
+public class DefaultNode implements Node {
 
-  private Set<Node> peers = new HashSet<>();
+  private final String host;
+  private final Integer port;
+
+  public DefaultNode(String host, Integer port) {
+    this.host = host;
+    this.port = port;
+  }
 
   @Override
-  public void spreadTo(Node node) {
-    boolean addOperation = peers.add(node);
-    // if the element is new
-    if (addOperation) {
+  public String host() {
+    return host;
+  }
 
-    }
+  @Override
+  public Integer port() {
+    return port;
+  }
 
-    // if we already know the peer
-    else {
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DefaultNode that = (DefaultNode) o;
+    return Objects.equals(host, that.host) &&
+      Objects.equals(port, that.port);
+  }
 
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hash(host, port);
   }
 }
