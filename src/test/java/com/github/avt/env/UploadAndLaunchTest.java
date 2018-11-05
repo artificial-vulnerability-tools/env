@@ -35,6 +35,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -97,20 +98,18 @@ public class UploadAndLaunchTest {
 
   private void printLogFile(Vertx vertx, String currentDir) {
     log.info("Dir with log file: " + currentDir);
-    File logTxtFile = vertx.fileSystem()
+    vertx.fileSystem()
       .readDirBlocking(currentDir)
       .stream()
       .map(File::new)
       .filter(file -> file.getName().endsWith("log.txt"))
-      .findAny()
-      .get();
-    try {
-      Files.readAllLines(logTxtFile.toPath()).forEach(line -> {
-        log.info("VIRUS: " + line);
+      .forEach(file -> {
+        try {
+          Optional<String> reduced = Files.readAllLines(file.toPath()).stream().reduce((one, another) -> one + "\n\t" + another);
+          log.info("File content of " + file.getName() + "\n" + reduced.orElse("EMPTY"));
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       });
-
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
 }

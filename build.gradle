@@ -3,25 +3,38 @@ plugins {
   id 'application'
 }
 
-// Define the main class for the application
-mainClassName = 'com.githhub.avt.env.Main'
-
-dependencies {
-  compile group: 'io.vertx', name: 'vertx-core', version: '3.5.4'
-  compile group: 'io.vertx', name: 'vertx-web', version: '3.5.4'
-  compile group: 'io.vertx', name: 'vertx-web-client', version: '3.5.4'
-  compile 'org.reflections:reflections:0.9.11'
-  compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.25'
-  testCompile group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.25'
-  testCompile group: 'io.vertx', name: 'vertx-unit', version: '3.5.4'
-  testCompile 'junit:junit:4.12'
-}
-
 repositories {
   jcenter()
   mavenLocal()
   mavenCentral()
 }
+
+mainClassName = 'com.githhub.avt.env.Main'
+
+ext {
+  vertx_version = '3.5.4'
+  slf4j_version = '1.7.25'
+  junit_version = '4.12'
+}
+
+dependencies {
+
+  // Vert.X dependencies
+  compile group: 'io.vertx', name: 'vertx-core', version: vertx_version
+  compile group: 'io.vertx', name: 'vertx-web', version: vertx_version
+  compile group: 'io.vertx', name: 'vertx-web-client', version: vertx_version
+  testCompile group: 'io.vertx', name: 'vertx-unit', version: vertx_version
+
+  // Logging
+  compile group: 'org.slf4j', name: 'slf4j-api', version: slf4j_version
+  testCompile group: 'org.slf4j', name: 'slf4j-simple', version: slf4j_version
+
+  testCompile group: 'junit', name: 'junit', version: junit_version
+}
+
+// _______________________________
+// Custom tasks
+
 
 task packageTests(type: Jar) {
   baseName = project.name + '-test-fat'
@@ -31,4 +44,11 @@ task packageTests(type: Jar) {
   from 'src/main/resources/run_virus.sh'
 }
 
+task cleanBinDirs {
+  def binDir = new File('.avtenv')
+  binDir.deleteDir()
+}
+
+
 tasks.test.dependsOn(packageTests)
+tasks.clean.dependsOn(cleanBinDirs)
