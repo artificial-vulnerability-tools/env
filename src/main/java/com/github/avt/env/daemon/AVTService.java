@@ -32,6 +32,8 @@ public class AVTService extends AbstractVerticle {
 
   public static final int DEFAULT_PORT = 2222;
   public static final String AVT_HOME_DIR = ".avtenv";
+  public static final String NAME_OF_JAR_WITH_VIRUS = "virus.jar";
+  public static final String INFECT_PATH = "/infect";
   public static final String SEPARATOR = System.getProperty("file.separator");
 
   private final Integer actualPort;
@@ -52,11 +54,11 @@ public class AVTService extends AbstractVerticle {
     }
     var server = vertx.createHttpServer();
     var router = Router.router(vertx);
-    router.post("/infect").handler(routingContext -> {
+    router.post(INFECT_PATH).handler(routingContext -> {
       routingContext.request().bodyHandler(body -> {
         var dirName = dirName();
         var dirNameToCreate = AVT_HOME_DIR + SEPARATOR + dirName;
-        var jarFileName = dirNameToCreate + SEPARATOR + "uploaded.jar";
+        var jarFileName = dirNameToCreate + SEPARATOR + NAME_OF_JAR_WITH_VIRUS;
         vertx.fileSystem().mkdir(dirNameToCreate, dirCreated -> {
           if (dirCreated.succeeded()) {
             vertx.fileSystem().writeFile(jarFileName, body, done -> {

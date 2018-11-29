@@ -17,9 +17,13 @@
 
 package com.github.avt.env.spreading;
 
-public interface Node {
+/**
+ * Defines the way a virus can spread across the environment.
+ */
+public interface Topology {
 
-  String host();
-
-  Integer port();
+  /**
+   * Launches the service, related to a specific network topology.
+   */
+  void runTopologyService();
 }

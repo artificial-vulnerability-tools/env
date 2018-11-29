@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static com.github.avt.env.TestLauncher.TEST_FILE_NAME;
 import static com.github.avt.env.daemon.AVTService.AVT_HOME_DIR;
+import static com.github.avt.env.daemon.AVTService.INFECT_PATH;
 
 @RunWith(VertxUnitRunner.class)
 public class UploadAndLaunchTest {
@@ -59,7 +60,7 @@ public class UploadAndLaunchTest {
         if (fileRes.succeeded()) {
           ReadStream<Buffer> fileStream = fileRes.result();
           webClient
-            .post(AVTService.DEFAULT_PORT, "localhost", "/infect")
+            .post(AVTService.DEFAULT_PORT, "localhost", INFECT_PATH)
             .sendStream(fileStream, ar -> {
               if (ar.succeeded()) {
                 log.info("Jar uploaded");

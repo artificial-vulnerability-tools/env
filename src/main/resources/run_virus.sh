@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 VIRUS_CLASS=$1
+NAME_OF_JAR_WITH_VIRUS="virus.jar"
 
 echo ${VIRUS_CLASS} > virus_class_name.txt
 
@@ -14,6 +15,6 @@ public class Main {
 }
 EOL
 
-javac -cp uploaded.jar Main.java &> javac_cp_log.txt
+javac -cp ${NAME_OF_JAR_WITH_VIRUS} Main.java &> javac_cp_log.txt
 jar cf jar_with_main.jar Main.class &> jarcf_log.txt
-java -cp jar_with_main.jar:uploaded.jar Main &> log.txt
+java -cp jar_with_main.jar:${NAME_OF_JAR_WITH_VIRUS} Main &> log.txt
