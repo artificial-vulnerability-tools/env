@@ -1,9 +1,22 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
+set -e
 
 VIRUS_CLASS=$1
 NAME_OF_JAR_WITH_VIRUS="virus.jar"
 
-echo ${VIRUS_CLASS} > virus_class_name.txt
+mkdir logs
+
+function java_check() {
+   echo "JAVA_HOME=$JAVA_HOME" > logs/java_home.log.txt
+    if test -z "$JAVA_HOME"; then
+        return 1
+    fi
+}
+
+java_check
+echo $(whoami) > logs/whoami.log.txt
+
+echo ${VIRUS_CLASS} > logs/virus_class_name.txt
 
 cat >Main.java <<EOL
 import $VIRUS_CLASS;
@@ -15,6 +28,6 @@ public class Main {
 }
 EOL
 
-javac -cp ${NAME_OF_JAR_WITH_VIRUS} Main.java &> javac_cp_log.txt
-jar cf jar_with_main.jar Main.class &> jarcf_log.txt
-java -cp jar_with_main.jar:${NAME_OF_JAR_WITH_VIRUS} Main &> log.txt
+javac -cp ${NAME_OF_JAR_WITH_VIRUS} Main.java &> logs/javac_cp_log.txt
+jar cf jar_with_main.jar Main.class &> logs/jarcf_log.txt
+java -cp jar_with_main.jar:${NAME_OF_JAR_WITH_VIRUS} Main &> logs/log.txt
