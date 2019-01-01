@@ -12,7 +12,7 @@ repositories {
 mainClassName = 'com.githhub.avt.env.Main'
 
 ext {
-  vertx_version = '3.5.4'
+  vertx_version = '3.6.2'
   slf4j_version = '1.7.25'
   junit_version = '4.12'
 }
