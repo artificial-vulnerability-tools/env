@@ -19,6 +19,7 @@ package com.github.avt.env.spreading.impl;
 
 import com.github.avt.env.spreading.InfectedHost;
 import com.github.avt.env.spreading.InfectionClient;
+import com.github.avt.env.spreading.Network;
 import com.github.avt.env.spreading.Topology;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -45,20 +46,24 @@ import java.util.Set;
 public class PeerToPeerNetworkTopology implements Topology {
 
   public static final Logger log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class);
+  public static final Integer DELAY = 1000;
+  public static final Integer PEER_TO_PEER_TOPOLOGY_DEFAULT_PORT = 2222;
 
   private Set<InfectedHost> peers = new ConcurrentHashSet<>();
-  public static final Integer VIRUS_PORT = 2223;
-  public static final Integer DELAY = 1000;
+  public final Integer topologyServicePort;
   private final Vertx vertx;
   private final InfectionClient infectionClient;
   private final NetClient netClient;
+  private final String networkHost;
 
   private Random rnd = new Random();
 
-  public PeerToPeerNetworkTopology() {
+  public PeerToPeerNetworkTopology(int topologyServicePort, Network network) {
     this.vertx = Vertx.vertx();
     this.netClient = vertx.createNetClient();
     this.infectionClient = new InfectionClientImpl(vertx);
+    this.topologyServicePort = topologyServicePort;
+    this.networkHost = network.getHostAddressInTheNetworkBlocking();
   }
 
   @Override
@@ -123,6 +128,6 @@ public class PeerToPeerNetworkTopology implements Topology {
         ctx.response().end(responseJson.toBuffer());
       });
     });
-    httpServer.requestHandler(router::accept).listen(VIRUS_PORT);
+    httpServer.requestHandler(router::accept).listen(topologyServicePort);
   }
 }

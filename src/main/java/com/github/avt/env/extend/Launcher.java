@@ -17,6 +17,7 @@
 
 package com.github.avt.env.extend;
 
+import com.github.avt.env.spreading.Network;
 import com.github.avt.env.spreading.Topology;
 import com.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
 
@@ -33,7 +34,11 @@ public abstract class Launcher {
   /**
    * Related to the way how the virus spreads across the environment and overlay network topology.
    */
-  public Topology topology = new PeerToPeerNetworkTopology();
+  public Topology topology =
+    new PeerToPeerNetworkTopology(
+      PeerToPeerNetworkTopology.PEER_TO_PEER_TOPOLOGY_DEFAULT_PORT,
+      new Network(Network.NetworkType.IPv4_INTERNET)
+    );
 
   public void start() {
     launch();
