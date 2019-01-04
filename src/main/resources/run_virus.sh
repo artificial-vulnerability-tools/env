@@ -6,14 +6,6 @@ NAME_OF_JAR_WITH_VIRUS="virus.jar"
 
 mkdir logs
 
-function java_check() {
-   echo "JAVA_HOME=$JAVA_HOME" > logs/java_home.log.txt
-    if test -z "$JAVA_HOME"; then
-        return 1
-    fi
-}
-
-java_check
 echo $(whoami) > logs/whoami.log.txt
 
 echo ${VIRUS_CLASS} > logs/virus_class_name.txt

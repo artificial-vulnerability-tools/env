@@ -46,6 +46,7 @@ public class InfectionService extends AbstractVerticle {
 
   public static final String INFECTION_ADDRESS = "infection";
   public static final String VIRUS_SCRIPT_NAME = "run_virus.sh";
+  public static final String BASH_INTERPRETER_PATH = "/bin/bash";
 
   private static final Logger log = LoggerFactory.getLogger(InfectionService.class);
 
@@ -121,9 +122,17 @@ public class InfectionService extends AbstractVerticle {
   private void runVirusScript(File bashFile, String className) {
     try {
       List<String> args = new ArrayList<>();
+      args.add(BASH_INTERPRETER_PATH);
       args.add(bashFile.getAbsolutePath());
       args.add(className);
+      log.info("Spawning a new process:" + args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
       ProcessBuilder pb = new ProcessBuilder(args);
+      String path = pb.environment().get("PATH");
+      String libPath = System.getProperties().getProperty("java.home");
+      path = path + File.pathSeparator + libPath + "/bin"; // should actually include null checks
+      pb.environment().put("PATH", path);
+      String envString = pb.environment().entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).reduce("\n", (acc, newLine) -> acc + "\n" + newLine);
+      log.info("Process env: " + envString);
       pb.directory(bashFile.getParentFile());
       Process p = pb.start();
       ProcessHandle processHandle = p.toHandle();
