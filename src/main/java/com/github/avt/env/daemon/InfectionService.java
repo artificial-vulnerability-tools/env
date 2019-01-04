@@ -128,7 +128,7 @@ public class InfectionService extends AbstractVerticle {
       Process p = pb.start();
       ProcessHandle processHandle = p.toHandle();
       currentProcesses.put(processHandle.pid(), processHandle);
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("A problem with virus running occurred", e);
     }
   }
