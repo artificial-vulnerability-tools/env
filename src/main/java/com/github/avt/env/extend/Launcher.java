@@ -40,7 +40,8 @@ public abstract class Launcher {
       new Network(Network.NetworkType.IPv4_INTERNET)
     );
 
-  public void start() {
+  public void start(int envPort) {
+    topology.runTopologyService(envPort);
     launch();
   }
 }

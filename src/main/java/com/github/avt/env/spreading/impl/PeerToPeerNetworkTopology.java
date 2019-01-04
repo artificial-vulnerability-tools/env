@@ -55,6 +55,7 @@ public class PeerToPeerNetworkTopology implements Topology {
   private final InfectionClient infectionClient;
   private final NetClient netClient;
   private final String networkHost;
+  private int envPort;
 
   private Random rnd = new Random();
 
@@ -67,7 +68,8 @@ public class PeerToPeerNetworkTopology implements Topology {
   }
 
   @Override
-  public void runTopologyService() {
+  public void runTopologyService(int envPort) {
+    this.envPort = envPort;
     startGossipPassiveService();
     startGossipActiveService();
   }

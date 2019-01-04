@@ -125,6 +125,7 @@ public class InfectionService extends AbstractVerticle {
       args.add(BASH_INTERPRETER_PATH);
       args.add(bashFile.getAbsolutePath());
       args.add(className);
+      args.add(avtServicePort.toString());
       log.info("Spawning a new process:" + args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
       ProcessBuilder pb = new ProcessBuilder(args);
       setupPathVariable(pb);
