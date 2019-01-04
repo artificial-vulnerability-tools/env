@@ -13,6 +13,15 @@ public class HostWithEnvironment implements HasVertxSocketAddress {
     this.envPort = envPort;
   }
 
+  public HostWithEnvironment(String uri) {
+    var split = uri.split(":");
+    if (split.length >= 2) {
+      throw new IllegalStateException("uri should have at least host and port");
+    }
+    host = split[0];
+    envPort = Integer.parseInt(split[1]);
+  }
+
   public String getHost() {
     return host;
   }

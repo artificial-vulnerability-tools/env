@@ -17,30 +17,21 @@
 
 package com.github.avt.env.spreading.impl;
 
-import com.github.avt.env.daemon.AVTService;
+import com.github.avt.env.spreading.InfectedHost;
+import com.github.avt.env.spreading.InfectionClient;
 import com.github.avt.env.spreading.Topology;
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.file.OpenOptions;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.net.NetClient;
-import io.vertx.core.net.SocketAddress;
-import io.vertx.core.net.impl.SocketAddressImpl;
-import io.vertx.core.streams.ReadStream;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-
-import static com.github.avt.env.daemon.AVTService.INFECT_PATH;
-import static com.github.avt.env.daemon.AVTService.NAME_OF_JAR_WITH_VIRUS;
 
 
 /**
@@ -54,20 +45,19 @@ public class PeerToPeerNetworkTopology implements Topology {
 
   public static final Logger log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class);
 
-  private Set<SocketAddress> peers = new ConcurrentHashSet<>();
+  private Set<InfectedHost> peers = new ConcurrentHashSet<>();
   public static final Integer VIRUS_PORT = 2223;
   public static final Integer DELAY = 1000;
-  public static final String NOT_A_PEER_PARAM = "not-a-peer";
   private final Vertx vertx;
-  private final WebClient httpClient;
+  private final InfectionClient infectionClient;
   private final NetClient netClient;
 
   private Random rnd = new Random();
 
   public PeerToPeerNetworkTopology() {
     this.vertx = Vertx.vertx();
-    this.httpClient = WebClient.create(vertx);
     this.netClient = vertx.createNetClient();
+    this.infectionClient = new InfectionClientImpl(vertx);
   }
 
   @Override
@@ -78,16 +68,15 @@ public class PeerToPeerNetworkTopology implements Topology {
 
   private void startGossipActiveService() {
     vertx.setPeriodic(DELAY, event -> {
-      Optional<SocketAddress> optionSocketAddress = pickRandomPeer();
+      Optional<InfectedHost> optionSocketAddress = pickRandomPeer();
       if (optionSocketAddress.isEmpty()) {
         return;
       }
-
-      SocketAddress gossipTarget = optionSocketAddress.get();
+      InfectedHost gossipTarget = optionSocketAddress.get();
       checkIfNeedToInfect(gossipTarget)
         .compose(needToInfect -> {
           if (needToInfect) {
-            return infect(gossipTarget);
+            return infectionClient.infect(gossipTarget.getHostWithEnv());
           } else {
             return gossip(gossipTarget);
           }
@@ -95,43 +84,21 @@ public class PeerToPeerNetworkTopology implements Topology {
     });
   }
 
-  private Future<Void> gossip(SocketAddress gossipTarget) {
+  private Future<Void> gossip(InfectedHost gossipTarget) {
     return null;
   }
 
-  private Future<Void> infect(SocketAddress gossipTarget) {
-    Future<Void> result = Future.future();
-    vertx.fileSystem().open(NAME_OF_JAR_WITH_VIRUS, new OpenOptions(), fileRes -> {
-      if (fileRes.succeeded()) {
-        ReadStream<Buffer> fileStream = fileRes.result();
-        httpClient
-          .post(AVTService.DEFAULT_PORT, gossipTarget.host(), INFECT_PATH)
-          .sendStream(fileStream, ar -> {
-            if (ar.succeeded()) {
-              log.info(gossipTarget.host() + AVTService.DEFAULT_PORT);
-              result.complete();
-            } else {
-              result.fail(ar.cause());
-            }
-          });
-      } else {
-        result.fail(fileRes.cause());
-      }
-    });
-    return result;
-  }
-
-  private Future<Boolean> checkIfNeedToInfect(SocketAddress gossipTarget) {
+  private Future<Boolean> checkIfNeedToInfect(InfectedHost gossipTarget) {
     Future<Boolean> result = Future.future();
-    netClient.connect(gossipTarget, event -> result.complete(event.succeeded()));
+    netClient.connect(gossipTarget.toVertxSocketAddress(), event -> result.complete(event.failed()));
     return result;
   }
 
-  private Optional<SocketAddress> pickRandomPeer() {
+  private Optional<InfectedHost> pickRandomPeer() {
     int size = peers.size();
     int item = rnd.nextInt(size); // In real life, the Random object should be rather more shared than this
     int i = 0;
-    for (SocketAddress obj : peers) {
+    for (var obj : peers) {
       if (i == item)
         return Optional.ofNullable(obj);
       i++;
@@ -143,16 +110,12 @@ public class PeerToPeerNetworkTopology implements Topology {
     var httpServer = vertx.createHttpServer();
     var router = Router.router(vertx);
     router.post("/gossip").handler(ctx -> {
-      MultiMap params = ctx.request().params();
-      if (!params.contains(NOT_A_PEER_PARAM)) {
-        peers.add(ctx.request().connection().remoteAddress());
-      }
-
       ctx.request().bodyHandler(body -> {
         JsonArray objects = body.toJsonArray();
         objects.stream().map(o -> (String) o).forEach(uri -> {
-          String[] split = uri.split(":");
-          peers.add(new SocketAddressImpl(Integer.parseInt(split[1]), split[0]));
+          InfectedHost infectedHost = new InfectedHost(uri);
+
+
         });
       });
     });
