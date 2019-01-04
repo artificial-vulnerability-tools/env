@@ -20,6 +20,7 @@ import java.net.URLConnection;
 public class NetworkTest {
 
   private static final String HTTP_GOOGLE_COM = "http://www.google.com";
+  private static final String AMAZON_CHECK_IP = "http://checkip.amazonaws.com";
   private static final Logger log = LoggerFactory.getLogger(NetworkTest.class);
 
   @Test
@@ -55,7 +56,7 @@ public class NetworkTest {
 
   private static String internetIpAddress() {
     try {
-      URL whatismyip = new URL("http://checkip.amazonaws.com");
+      URL whatismyip = new URL(AMAZON_CHECK_IP);
       BufferedReader in = new BufferedReader(new InputStreamReader(
         whatismyip.openStream()));
       return in.readLine();
