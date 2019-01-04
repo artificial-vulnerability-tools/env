@@ -127,18 +127,34 @@ public class InfectionService extends AbstractVerticle {
       args.add(className);
       log.info("Spawning a new process:" + args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
       ProcessBuilder pb = new ProcessBuilder(args);
-      String path = pb.environment().get("PATH");
-      String libPath = System.getProperties().getProperty("java.home");
-      path = path + File.pathSeparator + libPath + "/bin"; // should actually include null checks
-      pb.environment().put("PATH", path);
-      String envString = pb.environment().entrySet().stream().map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).reduce("\n", (acc, newLine) -> acc + "\n" + newLine);
-      log.info("Process env: " + envString);
-      pb.directory(bashFile.getParentFile());
-      Process p = pb.start();
-      ProcessHandle processHandle = p.toHandle();
-      currentProcesses.put(processHandle.pid(), processHandle);
+      setupPathVariable(pb);
+      logPathVariable(pb);
+      startProcess(bashFile, pb);
     } catch (Exception e) {
       log.error("A problem with virus running occurred", e);
     }
+  }
+
+  private void startProcess(File bashFile, ProcessBuilder pb) throws IOException {
+    pb.directory(bashFile.getParentFile());
+    Process p = pb.start();
+    ProcessHandle processHandle = p.toHandle();
+    currentProcesses.put(processHandle.pid(), processHandle);
+  }
+
+  private void logPathVariable(ProcessBuilder pb) {
+    String envString = pb.environment()
+      .entrySet()
+      .stream()
+      .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
+      .reduce("\n", (acc, newLine) -> acc + "\n" + newLine);
+    log.info("Process env: " + envString);
+  }
+
+  private void setupPathVariable(ProcessBuilder pb) {
+    String path = pb.environment().get("PATH");
+    String libPath = System.getProperties().getProperty("java.home");
+    path = path + File.pathSeparator + libPath + "/bin"; // should actually include null checks
+    pb.environment().put("PATH", path);
   }
 }
