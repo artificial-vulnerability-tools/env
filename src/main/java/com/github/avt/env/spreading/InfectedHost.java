@@ -25,4 +25,9 @@ public class InfectedHost implements HasVertxSocketAddress {
   public SocketAddress toVertxSocketAddress() {
     return new SocketAddressImpl(virusPort, hostWithEnv.getHost());
   }
+
+  @Override
+  public String toString() {
+    return hostWithEnv.toString() + ":" + virusPort;
+  }
 }
