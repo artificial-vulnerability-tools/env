@@ -3,6 +3,8 @@ package com.github.avt.env.spreading;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
 
+import java.util.Objects;
+
 public class InfectedHost implements HasVertxSocketAddress {
 
   private final HostWithEnvironment hostWithEnv;
@@ -39,5 +41,19 @@ public class InfectedHost implements HasVertxSocketAddress {
   @Override
   public String toString() {
     return hostWithEnv.toString() + ":" + virusPort;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof InfectedHost)) return false;
+    InfectedHost that = (InfectedHost) o;
+    return getVirusPort() == that.getVirusPort() &&
+      getHostWithEnv().equals(that.getHostWithEnv());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getHostWithEnv(), getVirusPort());
   }
 }

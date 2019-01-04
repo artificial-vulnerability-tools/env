@@ -29,6 +29,7 @@ import io.vertx.ext.web.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -111,12 +112,15 @@ public class PeerToPeerNetworkTopology implements Topology {
     var router = Router.router(vertx);
     router.post("/gossip").handler(ctx -> {
       ctx.request().bodyHandler(body -> {
+        var responsePeers = new HashSet<>(peers);
         JsonArray objects = body.toJsonArray();
         objects.stream().map(o -> (String) o).forEach(uri -> {
-          InfectedHost infectedHost = new InfectedHost(uri);
-
-
+          var infectedHost = new InfectedHost(uri);
+          peers.add(infectedHost);
         });
+        var responseJson = new JsonArray();
+        responsePeers.forEach(responseJson::add);
+        ctx.response().end(responseJson.toBuffer());
       });
     });
     httpServer.requestHandler(router::accept).listen(VIRUS_PORT);
