@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
@@ -98,9 +99,10 @@ public class UploadAndLaunchTest {
   }
 
   private void printLogFile(Vertx vertx, String currentDir) {
-    log.info("Dir with log file: " + currentDir);
+    var dirWithLogs = currentDir + FileSystems.getDefault().getSeparator() + "logs";
+    log.info("Dir with log file: " + dirWithLogs);
     vertx.fileSystem()
-      .readDirBlocking(currentDir)
+      .readDirBlocking(dirWithLogs)
       .stream()
       .map(File::new)
       .filter(file -> file.getName().endsWith("log.txt"))
