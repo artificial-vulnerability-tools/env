@@ -167,7 +167,7 @@ public class InfectionService extends AbstractVerticle {
       .stream()
       .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
       .reduce("\n", (acc, newLine) -> acc + "\n" + newLine);
-    log.info("Process env: " + envString);
+    log.debug("Process env: " + envString);
   }
 
   private void setupPathVariable(ProcessBuilder pb) {
