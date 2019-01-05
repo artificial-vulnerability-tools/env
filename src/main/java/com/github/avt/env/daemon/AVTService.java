@@ -20,6 +20,7 @@ package com.github.avt.env.daemon;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,8 +40,11 @@ public class AVTService extends AbstractVerticle {
   public static final String AVT_HOME_DIR = ".avtenv";
   public static final String NAME_OF_JAR_WITH_VIRUS = "virus.jar";
   public static final String INFECT_PATH = "/infect";
+  public static final String VIRUS_TOPOLOGY_ON_PORT = "/infected";
+  public static final String PORT_FIELD = "port";
   public static final String SEPARATOR = System.getProperty("file.separator");
 
+  private final ReactivePort reactivePort = new ReactivePort();
   private final Integer actualPort;
 
   public AVTService() {
@@ -71,14 +75,20 @@ public class AVTService extends AbstractVerticle {
           if (dirCreation.succeeded()) {
             log.info("Directory " + dirNameToCreate + " has been created");
             vertx.fileSystem().writeFile(jarFileName, body, done -> {
-              vertx.eventBus().send(INFECTION_ADDRESS + ":" + actualPort, jarFileName, reply -> {
-                routingContext.response().end((String) reply.result().body());
-              });
+              vertx.eventBus().send(INFECTION_ADDRESS + ":" + actualPort, jarFileName);
+              reactivePort.whenInfected(port -> routingContext.response().end(new JsonObject().put(PORT_FIELD, port).toBuffer()));
             });
           } else {
             log.error("Unable to create a directory for a virus", dirCreation.cause());
           }
         });
+      });
+    });
+    router.post(VIRUS_TOPOLOGY_ON_PORT).handler(routingContext -> {
+      routingContext.request().bodyHandler(body -> {
+        Integer infectedPort = body.toJsonObject().getInteger(PORT_FIELD);
+        log.info("Received INFECTED ack on port " + infectedPort);
+        reactivePort.infectedPort(infectedPort);
       });
     });
     Future<String> infectionVerticleDeployed = Future.future();

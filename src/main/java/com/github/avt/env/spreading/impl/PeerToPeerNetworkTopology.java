@@ -17,6 +17,7 @@
 
 package com.github.avt.env.spreading.impl;
 
+import com.github.avt.env.daemon.AVTService;
 import com.github.avt.env.spreading.InfectedHost;
 import com.github.avt.env.spreading.InfectionClient;
 import com.github.avt.env.spreading.Network;
@@ -26,8 +27,10 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+
+import static com.github.avt.env.daemon.AVTService.PORT_FIELD;
 
 
 /**
@@ -49,7 +54,7 @@ public class PeerToPeerNetworkTopology implements Topology {
   public static final Logger log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class);
   public static final Integer DELAY = 1000;
   public static final Integer PEER_TO_PEER_TOPOLOGY_DEFAULT_PORT = 2222;
-
+  private final WebClient webClient;
   private Set<InfectedHost> peers = new ConcurrentHashSet<>();
   public final Integer topologyServicePort;
   private final Vertx vertx;
@@ -63,6 +68,7 @@ public class PeerToPeerNetworkTopology implements Topology {
   public PeerToPeerNetworkTopology(int topologyServicePort, Network network) {
     this.vertx = Vertx.vertx();
     this.netClient = vertx.createNetClient();
+    this.webClient = WebClient.create(vertx);
     this.infectionClient = new InfectionClientImpl(vertx);
     this.topologyServicePort = topologyServicePort;
     this.networkHost = network.getHostAddressInTheNetworkBlocking();
@@ -75,8 +81,20 @@ public class PeerToPeerNetworkTopology implements Topology {
   @Override
   public void runTopologyService(int envPort) {
     this.envPort = envPort;
+    notifyEnvironmentAboutTopologyService();
     startGossipPassiveService();
     startGossipActiveService();
+  }
+
+  private void notifyEnvironmentAboutTopologyService() {
+    webClient.postAbs(String.format("http://localhost:%s%s", envPort, AVTService.VIRUS_TOPOLOGY_ON_PORT))
+      .sendJsonObject(new JsonObject().put(PORT_FIELD, topologyServicePort), response -> {
+        if (response.succeeded()) {
+          log.error("Successfully responded back with topology service port");
+        } else {
+          log.error("Unable to respond back with topology service port");
+        }
+      });
   }
 
   @Override
