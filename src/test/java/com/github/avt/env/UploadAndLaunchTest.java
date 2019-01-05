@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -54,6 +55,8 @@ public class UploadAndLaunchTest {
     Async async = testContext.async(2);
     AtomicReference<List<String>> startTestDirs = new AtomicReference<>(null);
     vertx.deployVerticle(new AVTService(), deployed -> {
+      String deploymentId = deployed.result();
+      Objects.requireNonNull(deploymentId);
       startTestDirs.set(vertx.fileSystem().readDirBlocking(AVT_HOME_DIR));
       infectionClient.infect(
         new HostWithEnvironment("localhost", AVTService.DEFAULT_PORT),
@@ -76,7 +79,9 @@ public class UploadAndLaunchTest {
 
           if (files.contains(TEST_FILE_NAME + "." + AVTService.DEFAULT_PORT)) {
             vertx.cancelTimer(timerId);
-            async.countDown();
+            vertx.undeploy(deploymentId, undeployed -> {
+              async.countDown();
+            });
           }
         }
       });

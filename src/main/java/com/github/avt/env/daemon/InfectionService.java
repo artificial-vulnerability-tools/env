@@ -20,6 +20,7 @@ package com.github.avt.env.daemon;
 import com.github.avt.env.extend.Launcher;
 import com.github.avt.env.process.ProcessMap;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.CopyOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +51,8 @@ public class InfectionService extends AbstractVerticle {
 
   private static final Logger log = LoggerFactory.getLogger(InfectionService.class);
 
-  private ProcessMap currentProcesses = new ProcessMap();
-
+  private MessageConsumer consumer;
+  private final ProcessMap currentProcesses = new ProcessMap();
   private final Integer avtServicePort;
 
   public InfectionService(Integer avtServicePort) {
@@ -60,7 +61,7 @@ public class InfectionService extends AbstractVerticle {
 
   @Override
   public void start() {
-    vertx.eventBus().consumer(INFECTION_ADDRESS + ":" + avtServicePort, event -> {
+    consumer = vertx.eventBus().consumer(INFECTION_ADDRESS + ":" + avtServicePort, event -> {
       var obtainedJarFile = new File((String) event.body());
       log.info("Jar file to analyze:" + obtainedJarFile);
       try {
@@ -94,6 +95,22 @@ public class InfectionService extends AbstractVerticle {
       }
     });
     log.info("Successfully started");
+  }
+
+  @Override
+  public void stop() {
+    consumer.unregister();
+    while (!currentProcesses.isEmpty()) {
+      currentProcesses.forEach((pid, processHandle) -> {
+        boolean result = processHandle.destroyForcibly();
+        if (result) {
+          log.info("process " + pid + " has been destroyed in a forcible manner");
+          currentProcesses.remove(pid);
+        } else {
+          log.error("Unable to stop process " + pid);
+        }
+      });
+    }
   }
 
   private void runVirus(File jar, String className) {
