@@ -17,6 +17,9 @@
 
 package com.github.avt.env.process;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,11 +28,16 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ProcessMap extends ConcurrentHashMap<Long, ProcessHandle> {
 
+  private static final Logger log = LoggerFactory.getLogger(ProcessMap.class);
+
   @Override
   public ProcessHandle put(Long key, ProcessHandle value) {
     ProcessHandle put = super.put(key, value);
     CompletableFuture<ProcessHandle> processHandleCompletableFuture = value.onExit();
-    processHandleCompletableFuture.thenRun(() -> remove(key));
+    processHandleCompletableFuture.thenRun(() -> {
+      log.info("process " + key + " exit");
+      remove(key);
+    });
     return put;
   }
 

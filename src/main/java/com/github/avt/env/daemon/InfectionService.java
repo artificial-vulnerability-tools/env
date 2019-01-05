@@ -25,15 +25,14 @@ import io.vertx.core.file.CopyOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -49,7 +48,7 @@ public class InfectionService extends AbstractVerticle {
   public static final String VIRUS_SCRIPT_NAME = "run_virus.sh";
   public static final String BASH_INTERPRETER_PATH = "/bin/bash";
 
-  private static final Logger log = LoggerFactory.getLogger(InfectionService.class);
+  private final Logger log;
 
   private MessageConsumer consumer;
   private final ProcessMap currentProcesses = new ProcessMap();
@@ -57,11 +56,13 @@ public class InfectionService extends AbstractVerticle {
 
   public InfectionService(Integer avtServicePort) {
     this.avtServicePort = avtServicePort;
+    log = LoggerFactory.getLogger(this.getClass().getName() + ":" + avtServicePort);
   }
 
   @Override
   public void start() {
-    consumer = vertx.eventBus().consumer(INFECTION_ADDRESS + ":" + avtServicePort, event -> {
+    var addressToListen = INFECTION_ADDRESS + ":" + avtServicePort;
+    consumer = vertx.eventBus().consumer(addressToListen, event -> {
       var obtainedJarFile = new File((String) event.body());
       log.info("Jar file to analyze:" + obtainedJarFile);
       try {
@@ -94,23 +95,26 @@ public class InfectionService extends AbstractVerticle {
         e.printStackTrace();
       }
     });
-    log.info("Successfully started");
+    log.info("InfectionService successfully started on address: " + addressToListen);
   }
 
   @Override
   public void stop() {
     consumer.unregister();
+    if (currentProcesses.size() == 0) {
+      log.info("No processes to close");
+    }
     while (!currentProcesses.isEmpty()) {
       currentProcesses.forEach((pid, processHandle) -> {
-        boolean result = processHandle.destroyForcibly();
+        boolean result = processHandle.destroy();
         if (result) {
-          log.info("process " + pid + " has been destroyed in a forcible manner");
           currentProcesses.remove(pid);
         } else {
           log.error("Unable to stop process " + pid);
         }
       });
     }
+    log.info("InfectionService has been stopped");
   }
 
   private void runVirus(File jar, String className) {
@@ -157,8 +161,20 @@ public class InfectionService extends AbstractVerticle {
   private void startProcess(File bashFile, ProcessBuilder pb) throws IOException {
     pb.directory(bashFile.getParentFile());
     Process p = pb.start();
-    ProcessHandle processHandle = p.toHandle();
-    currentProcesses.put(processHandle.pid(), processHandle);
+    try {
+      p.waitFor();
+    } catch (InterruptedException e) {
+      log.error("A problem occurred during waiting for a process");
+    }
+    try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+      int virusProcessId = Integer.parseInt(reader.readLine());
+      Optional<ProcessHandle> virusProcess = ProcessHandle.of(virusProcessId);
+      if (virusProcess.isPresent()) {
+        currentProcesses.put(virusProcess.get().pid(), virusProcess.get());
+      } else {
+        log.error("Not able to lookup process by pid: " + virusProcess);
+      }
+    }
   }
 
   private void logPathVariable(ProcessBuilder pb) {

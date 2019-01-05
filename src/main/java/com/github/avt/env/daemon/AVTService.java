@@ -34,8 +34,7 @@ import static com.github.avt.env.daemon.InfectionService.INFECTION_ADDRESS;
  */
 public class AVTService extends AbstractVerticle {
 
-  private static final Logger log = LoggerFactory.getLogger(AVTService.class);
-
+  private final Logger log;
   public static final int DEFAULT_PORT = 2222;
   public static final String AVT_HOME_DIR = ".avtenv";
   public static final String NAME_OF_JAR_WITH_VIRUS = "virus.jar";
@@ -50,6 +49,7 @@ public class AVTService extends AbstractVerticle {
 
   public AVTService(Integer port) {
     actualPort = port;
+    log = LoggerFactory.getLogger(AVTService.class + ":" + actualPort);
   }
 
   @Override
@@ -83,10 +83,10 @@ public class AVTService extends AbstractVerticle {
       return listenFuture;
     }).setHandler(event -> {
       if (event.succeeded()) {
-        log.info("AVTService successfully started on port " + actualPort);
+        log.info("AVTService successfully started");
         startFuture.complete();
       } else {
-        log.error("Unable to start the AVTService on port " + actualPort, event.cause());
+        log.error("Unable to start the AVTService", event.cause());
         startFuture.fail(event.cause());
       }
     });
@@ -95,6 +95,6 @@ public class AVTService extends AbstractVerticle {
   private String dirName() {
     var dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd__HH_mm_ss");
     var now = LocalDateTime.now();
-    return dtf.format(now);
+    return "port_" + actualPort + "_time_" + dtf.format(now);
   }
 }
