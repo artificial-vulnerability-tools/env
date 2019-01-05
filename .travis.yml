@@ -1,5 +1,7 @@
 language: java
-dist: xenial
+os:
+  - linux
+  - osx
 jdk:
   - openjdk11
 
