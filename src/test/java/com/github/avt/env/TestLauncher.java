@@ -25,8 +25,8 @@ public class TestLauncher extends Launcher {
   public static final String TEST_FILE_NAME = "test-file.hello";
 
   @Override
-  public void launch() {
-    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME);
+  public void launch(int envPort) {
+    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
   }
 }
 

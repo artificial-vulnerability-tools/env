@@ -29,7 +29,7 @@ public abstract class Launcher {
   /**
    * You should override this method. Virus code should be executed inside this method.
    */
-  public abstract void launch();
+  public abstract void launch(int envPort);
 
   /**
    * Related to the way how the virus spreads across the environment and overlay network topology.
@@ -42,6 +42,6 @@ public abstract class Launcher {
 
   public void start(int envPort) {
     topology.runTopologyService(envPort);
-    launch();
+    launch(envPort);
   }
 }

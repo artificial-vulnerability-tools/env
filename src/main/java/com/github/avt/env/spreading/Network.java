@@ -3,6 +3,8 @@ package com.github.avt.env.spreading;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,6 +15,7 @@ public class Network {
   private final Vertx vertx;
   private final WebClient webClient;
   private static final String INTERNET_V4_LOOKUP_SITE = "http://checkip.amazonaws.com";
+  private static final Logger log = LoggerFactory.getLogger(Network.class);
 
   public Network(NetworkType networkType, Vertx vertx) {
     this.networkType = networkType;
@@ -50,8 +53,11 @@ public class Network {
       if (event.succeeded()) {
         countDownLatch.countDown();
         result.set(event.result());
+      } else {
+        log.error("Not able to reach " + INTERNET_V4_LOOKUP_SITE, event.cause());
       }
     });
+
     try {
       countDownLatch.await();
     } catch (InterruptedException e) {

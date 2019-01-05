@@ -57,7 +57,7 @@ public class UploadAndLaunchTest {
       startTestDirs.set(vertx.fileSystem().readDirBlocking(AVT_HOME_DIR));
       infectionClient.infect(
         new HostWithEnvironment("localhost", AVTService.DEFAULT_PORT),
-        new File("build/libs/env-test-fat.jar"))
+        Commons.TEST_FILE_WITH_VIRUS)
         .setHandler(ar -> {
           if (ar.succeeded()) {
             log.info("Jar uploaded");
@@ -74,7 +74,7 @@ public class UploadAndLaunchTest {
             .map(File::getName)
             .collect(Collectors.toList());
 
-          if (files.contains(TEST_FILE_NAME)) {
+          if (files.contains(TEST_FILE_NAME + "." + AVTService.DEFAULT_PORT)) {
             vertx.cancelTimer(timerId);
             async.countDown();
           }
@@ -82,7 +82,7 @@ public class UploadAndLaunchTest {
       });
     });
 
-    vertx.setTimer(10_000, event -> {
+    vertx.setTimer(10_0000, event -> {
       List<String> currentDirs = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
       currentDirs.removeAll(startTestDirs.get());
       printLogFiles(vertx, currentDirs.get(0));

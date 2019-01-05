@@ -81,10 +81,13 @@ public class AVTService extends AbstractVerticle {
       Future<HttpServer> listenFuture = Future.future();
       server.requestHandler(router).listen(actualPort, listenFuture);
       return listenFuture;
-    }).<Void>mapEmpty().setHandler(startFuture);
-    startFuture.setHandler(event -> {
+    }).setHandler(event -> {
       if (event.succeeded()) {
-        log.info("Successfully started on port " + actualPort);
+        log.info("AVTService successfully started on port " + actualPort);
+        startFuture.complete();
+      } else {
+        log.error("Unable to start the AVTService on port " + actualPort, event.cause());
+        startFuture.fail(event.cause());
       }
     });
   }
