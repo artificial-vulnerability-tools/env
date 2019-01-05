@@ -54,8 +54,8 @@ public class Network {
     CountDownLatch countDownLatch = new CountDownLatch(1);
     getHostAddressInTheNetwork().setHandler(event -> {
       if (event.succeeded()) {
-        countDownLatch.countDown();
         result.set(event.result());
+        countDownLatch.countDown();
       } else {
         log.error("Not able to reach " + INTERNET_V4_LOOKUP_SITE, event.cause());
       }
