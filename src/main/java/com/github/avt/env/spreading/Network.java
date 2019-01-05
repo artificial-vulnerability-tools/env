@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Network {
@@ -34,7 +35,9 @@ public class Network {
       Future<String> ipFuture = Future.future();
       webClient.getAbs(INTERNET_V4_LOOKUP_SITE).send(response -> {
         if (response.succeeded()) {
-          ipFuture.complete(response.result().bodyAsString().trim());
+          String result = response.result().bodyAsString().trim();
+          log.debug("INTERNET IP is " + result);
+          ipFuture.complete(result);
         } else {
           ipFuture.fail("Unable to reach " + INTERNET_V4_LOOKUP_SITE);
         }
@@ -59,9 +62,9 @@ public class Network {
     });
 
     try {
-      countDownLatch.await();
+      countDownLatch.await(10, TimeUnit.SECONDS);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      log.error("CDL await issue", e);
     }
     return result.get();
   }
