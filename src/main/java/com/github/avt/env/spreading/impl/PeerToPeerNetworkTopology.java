@@ -92,7 +92,7 @@ public class PeerToPeerNetworkTopology implements Topology {
         if (response.succeeded()) {
           log.error("Successfully responded back with topology service port");
         } else {
-          log.error("Unable to respond back with topology service port");
+          log.error("Unable to respond back with topology service port", response.cause());
         }
       });
   }
