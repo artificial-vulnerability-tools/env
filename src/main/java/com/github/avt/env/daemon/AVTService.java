@@ -18,7 +18,11 @@
 package com.github.avt.env.daemon;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -29,6 +33,8 @@ import static com.github.avt.env.daemon.InfectionService.INFECTION_ADDRESS;
  * Artificial vulnerability services. Aimed to expose an endpoint for a virus.
  */
 public class AVTService extends AbstractVerticle {
+
+  private static final Logger log = LoggerFactory.getLogger(AVTService.class);
 
   public static final int DEFAULT_PORT = 2222;
   public static final String AVT_HOME_DIR = ".avtenv";
@@ -47,7 +53,7 @@ public class AVTService extends AbstractVerticle {
   }
 
   @Override
-  public void start() {
+  public void start(Future<Void> startFuture) {
     var dirExist = vertx.fileSystem().existsBlocking(AVT_HOME_DIR);
     if (!dirExist) {
       vertx.fileSystem().mkdirBlocking(AVT_HOME_DIR);
@@ -70,8 +76,15 @@ public class AVTService extends AbstractVerticle {
       });
     });
 
-    vertx.deployVerticle(new InfectionService(actualPort));
-    server.requestHandler(router::accept).listen(actualPort);
+    Future<String> infectionVerticleDeployed = Future.future();
+    vertx.deployVerticle(new InfectionService(actualPort), infectionVerticleDeployed);
+    infectionVerticleDeployed.compose(id -> {
+      Future<HttpServer> listenFuture = Future.future();
+      server.requestHandler(router).listen(actualPort, listenFuture);
+      return listenFuture;
+    }).compose(s -> {
+      log.info("Successfully started on port " + actualPort);
+    }, startFuture);
   }
 
   private String dirName() {

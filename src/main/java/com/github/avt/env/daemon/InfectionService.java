@@ -93,6 +93,7 @@ public class InfectionService extends AbstractVerticle {
         e.printStackTrace();
       }
     });
+    log.info("Sucessfully started");
   }
 
   private void runVirus(File jar, String className) {
