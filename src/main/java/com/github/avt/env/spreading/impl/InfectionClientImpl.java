@@ -11,6 +11,8 @@ import io.vertx.ext.web.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+
 import static com.github.avt.env.daemon.AVTService.INFECT_PATH;
 import static com.github.avt.env.daemon.AVTService.NAME_OF_JAR_WITH_VIRUS;
 
@@ -31,8 +33,13 @@ public class InfectionClientImpl implements InfectionClient {
 
   @Override
   public Future<Void> infect(HostWithEnvironment hostWithEnvironment) {
+    return infect(hostWithEnvironment, new File(NAME_OF_JAR_WITH_VIRUS));
+  }
+
+  @Override
+  public Future<Void> infect(HostWithEnvironment hostWithEnvironment, File artifactWithVirus) {
     Future<Void> result = Future.future();
-    vertx.fileSystem().open(NAME_OF_JAR_WITH_VIRUS, new OpenOptions(), fileRes -> {
+    vertx.fileSystem().open(artifactWithVirus.getAbsolutePath(), new OpenOptions(), fileRes -> {
       if (fileRes.succeeded()) {
         ReadStream<Buffer> fileStream = fileRes.result();
         webClient

@@ -18,14 +18,13 @@
 package com.github.avt.env;
 
 import com.github.avt.env.daemon.AVTService;
+import com.github.avt.env.spreading.HostWithEnvironment;
+import com.github.avt.env.spreading.InfectionClient;
+import com.github.avt.env.spreading.impl.InfectionClientImpl;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.file.OpenOptions;
-import io.vertx.core.streams.ReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import io.vertx.ext.web.client.WebClient;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -42,12 +41,12 @@ import java.util.stream.Collectors;
 
 import static com.github.avt.env.TestLauncher.TEST_FILE_NAME;
 import static com.github.avt.env.daemon.AVTService.AVT_HOME_DIR;
-import static com.github.avt.env.daemon.AVTService.INFECT_PATH;
 
 @RunWith(VertxUnitRunner.class)
 public class UploadAndLaunchTest {
 
   public static final Logger log = LoggerFactory.getLogger(UploadAndLaunchTest.class);
+  public InfectionClient infectionClient = new InfectionClientImpl();
 
   @Test
   public void uploadAndRun(TestContext testContext) {
@@ -56,21 +55,15 @@ public class UploadAndLaunchTest {
     AtomicReference<List<String>> startTestDirs = new AtomicReference<>(null);
     vertx.deployVerticle(new AVTService(), deployed -> {
       startTestDirs.set(vertx.fileSystem().readDirBlocking(AVT_HOME_DIR));
-      WebClient webClient = WebClient.create(vertx);
-      vertx.fileSystem().open("build/libs/env-test-fat.jar", new OpenOptions(), fileRes -> {
-        if (fileRes.succeeded()) {
-          ReadStream<Buffer> fileStream = fileRes.result();
-          webClient
-            .post(AVTService.DEFAULT_PORT, "localhost", INFECT_PATH)
-            .sendStream(fileStream, ar -> {
-              if (ar.succeeded()) {
-                log.info("Jar uploaded");
-                async.countDown();
-              }
-            });
-        }
-      });
-
+      infectionClient.infect(
+        new HostWithEnvironment("localhost", AVTService.DEFAULT_PORT),
+        new File("build/libs/env-test-fat.jar"))
+        .setHandler(ar -> {
+          if (ar.succeeded()) {
+            log.info("Jar uploaded");
+            async.countDown();
+          }
+        });
       vertx.setPeriodic(100, timerId -> {
         List<String> currentFiles = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
         currentFiles.removeAll(startTestDirs.get());

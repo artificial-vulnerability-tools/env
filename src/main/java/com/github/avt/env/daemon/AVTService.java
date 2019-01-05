@@ -75,16 +75,18 @@ public class AVTService extends AbstractVerticle {
         });
       });
     });
-
     Future<String> infectionVerticleDeployed = Future.future();
     vertx.deployVerticle(new InfectionService(actualPort), infectionVerticleDeployed);
     infectionVerticleDeployed.compose(id -> {
       Future<HttpServer> listenFuture = Future.future();
       server.requestHandler(router).listen(actualPort, listenFuture);
       return listenFuture;
-    }).compose(s -> {
-      log.info("Successfully started on port " + actualPort);
-    }, startFuture);
+    }).<Void>mapEmpty().setHandler(startFuture);
+    startFuture.setHandler(event -> {
+      if (event.succeeded()) {
+        log.info("Successfully started on port " + actualPort);
+      }
+    });
   }
 
   private String dirName() {
