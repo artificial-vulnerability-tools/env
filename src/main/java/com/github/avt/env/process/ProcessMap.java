@@ -44,12 +44,10 @@ public class ProcessMap extends ConcurrentHashMap<Long, ProcessHandle> {
   @Override
   public ProcessHandle get(Object key) {
     ProcessHandle processHandle = super.get(key);
-
     if (processHandle != null && !processHandle.isAlive()) {
       this.remove(key);
       return null;
     }
-
     return processHandle;
   }
 }

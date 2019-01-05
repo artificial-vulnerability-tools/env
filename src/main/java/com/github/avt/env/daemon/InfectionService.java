@@ -20,6 +20,7 @@ package com.github.avt.env.daemon;
 import com.github.avt.env.extend.Launcher;
 import com.github.avt.env.process.ProcessMap;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.file.CopyOptions;
 import org.slf4j.Logger;
@@ -85,7 +86,7 @@ public class InfectionService extends AbstractVerticle {
             Class<?> superclass = aClass.getSuperclass();
             if (superclass.getName().equals(Launcher.class.getName())) {
               log.info("Class to run " + aClass);
-              runVirus(obtainedJarFile, aClass.getName());
+              runVirus(obtainedJarFile, aClass.getName(), event);
             }
           } catch (Throwable exp) {
             // not able to load a class
@@ -117,7 +118,7 @@ public class InfectionService extends AbstractVerticle {
     log.info("InfectionService has been stopped");
   }
 
-  private void runVirus(File jar, String className) {
+  private void runVirus(File jar, String className, Message<Object> event) {
     try {
       File bashScriptGen = new File(
         Objects.requireNonNull(
@@ -131,6 +132,7 @@ public class InfectionService extends AbstractVerticle {
         if (copyDone.succeeded()) {
           log.info("Virus runner copied successfully");
           runVirusScript(new File(copyScriptPath), className);
+          event.reply("OK");
         } else {
           log.error(String.format("Copy from %s to %s failed", originalBashScriptPath, parentDir.getAbsolutePath()), copyDone.cause());
         }

@@ -63,7 +63,6 @@ public class TwoLocalNodesTest {
         }
       });
     oneNodeInfected.await(20_000);
-    Thread.sleep(2000);
     log.info("One of the nodes has been infected");
 
     Async undeployed = testContext.async(2);

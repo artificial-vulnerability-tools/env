@@ -61,16 +61,22 @@ public class AVTService extends AbstractVerticle {
     var server = vertx.createHttpServer();
     var router = Router.router(vertx);
     router.post(INFECT_PATH).handler(routingContext -> {
+      log.info("Received upload request");
       routingContext.request().bodyHandler(body -> {
+        log.info("Virus has been uploaded");
         var dirName = dirName();
         var dirNameToCreate = AVT_HOME_DIR + SEPARATOR + dirName;
         var jarFileName = dirNameToCreate + SEPARATOR + NAME_OF_JAR_WITH_VIRUS;
-        vertx.fileSystem().mkdir(dirNameToCreate, dirCreated -> {
-          if (dirCreated.succeeded()) {
+        vertx.fileSystem().mkdir(dirNameToCreate, dirCreation -> {
+          if (dirCreation.succeeded()) {
+            log.info("Directory " + dirNameToCreate + " has been created");
             vertx.fileSystem().writeFile(jarFileName, body, done -> {
-              vertx.eventBus().send(INFECTION_ADDRESS + ":" + actualPort, jarFileName);
-              routingContext.response().end("DONE");
+              vertx.eventBus().send(INFECTION_ADDRESS + ":" + actualPort, jarFileName, reply -> {
+                routingContext.response().end((String) reply.result().body());
+              });
             });
+          } else {
+            log.error("Unable to create a directory for a virus", dirCreation.cause());
           }
         });
       });
@@ -93,7 +99,7 @@ public class AVTService extends AbstractVerticle {
   }
 
   private String dirName() {
-    var dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd__HH_mm_ss");
+    var dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd__HH_mm_ss_SSS");
     var now = LocalDateTime.now();
     return "port_" + actualPort + "_time_" + dtf.format(now);
   }
