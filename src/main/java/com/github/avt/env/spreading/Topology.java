@@ -26,4 +26,6 @@ public interface Topology {
    * Launches the service, related to a specific network topology.
    */
   void runTopologyService(int envPort);
+
+  int topologyServicePort();
 }

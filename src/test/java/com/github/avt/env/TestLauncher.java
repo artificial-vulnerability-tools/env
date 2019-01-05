@@ -26,6 +26,7 @@ public class TestLauncher extends Launcher {
 
   @Override
   public void launch(int envPort) {
+    System.out.println("Hello world");
     Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
   }
 }

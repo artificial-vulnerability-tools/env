@@ -34,11 +34,7 @@ public abstract class Launcher {
   /**
    * Related to the way how the virus spreads across the environment and overlay network topology.
    */
-  public Topology topology =
-    new PeerToPeerNetworkTopology(
-      PeerToPeerNetworkTopology.PEER_TO_PEER_TOPOLOGY_DEFAULT_PORT,
-      new Network(Network.NetworkType.IPv4_INTERNET)
-    );
+  public Topology topology = new PeerToPeerNetworkTopology(new Network(Network.NetworkType.IPv4_INTERNET));
 
   public void start(int envPort) {
     topology.runTopologyService(envPort);

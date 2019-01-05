@@ -21,6 +21,7 @@ import com.github.avt.env.spreading.InfectedHost;
 import com.github.avt.env.spreading.InfectionClient;
 import com.github.avt.env.spreading.Network;
 import com.github.avt.env.spreading.Topology;
+import com.github.avt.env.util.Utils;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
@@ -67,11 +68,20 @@ public class PeerToPeerNetworkTopology implements Topology {
     this.networkHost = network.getHostAddressInTheNetworkBlocking();
   }
 
+  public PeerToPeerNetworkTopology(Network network) {
+    this(Utils.pickRandomFreePort(), network);
+  }
+
   @Override
   public void runTopologyService(int envPort) {
     this.envPort = envPort;
     startGossipPassiveService();
     startGossipActiveService();
+  }
+
+  @Override
+  public int topologyServicePort() {
+    return topologyServicePort;
   }
 
   private void startGossipActiveService() {
@@ -130,6 +140,12 @@ public class PeerToPeerNetworkTopology implements Topology {
         ctx.response().end(responseJson.toBuffer());
       });
     });
-    httpServer.requestHandler(router::accept).listen(topologyServicePort);
+    httpServer.requestHandler(router::accept).listen(topologyServicePort, done -> {
+      if (done.succeeded()) {
+        log.info("topology service started on port " + topologyServicePort);
+      } else {
+        log.error("Unable to start topology service on port " + topologyServicePort);
+      }
+    });
   }
 }

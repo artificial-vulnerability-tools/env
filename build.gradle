@@ -34,11 +34,9 @@ dependencies {
 
 // _______________________________
 // Custom tasks
-
-
 task packageTests(type: Jar) {
   baseName = project.name + '-test-fat'
-  from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  from configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) }
   from sourceSets.test.output
   from sourceSets.main.output
   from 'src/main/resources/run_virus.sh'
@@ -49,6 +47,7 @@ task cleanBinDirs {
   binDir.deleteDir()
 }
 
+// Task dependencies
 
 tasks.test.dependsOn(packageTests)
 tasks.clean.dependsOn(cleanBinDirs)
