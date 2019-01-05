@@ -85,12 +85,12 @@ public class UploadAndLaunchTest {
     vertx.setTimer(10_000, event -> {
       List<String> currentDirs = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
       currentDirs.removeAll(startTestDirs.get());
-      printLogFile(vertx, currentDirs.get(0));
+      printLogFiles(vertx, currentDirs.get(0));
       testContext.fail();
     });
   }
 
-  private void printLogFile(Vertx vertx, String currentDir) {
+  private void printLogFiles(Vertx vertx, String currentDir) {
     var dirWithLogs = currentDir + FileSystems.getDefault().getSeparator() + "logs";
     log.info("Dir with log file: " + dirWithLogs);
     vertx.fileSystem()
