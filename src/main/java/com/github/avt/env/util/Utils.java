@@ -1,10 +1,13 @@
 package com.github.avt.env.util;
 
+import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+
+import static com.github.avt.env.daemon.AVTService.TOPOLOGY_SERVICE_PORT;
 
 public class Utils {
 
@@ -20,5 +23,9 @@ public class Utils {
       log.error("An exception during picking random port selection process occured", e);
       return -1;
     }
+  }
+
+  public static JsonObject virusPortJson(int port) {
+    return new JsonObject().put(TOPOLOGY_SERVICE_PORT, port);
   }
 }

@@ -46,7 +46,7 @@ public class InfectionClientImpl implements InfectionClient {
           .post(hostWithEnvironment.getEnvPort(), hostWithEnvironment.getHost(), INFECT_PATH)
           .sendStream(fileStream, ar -> {
             if (ar.succeeded()) {
-              result.complete(new InfectedHost(hostWithEnvironment, ar.result().bodyAsJsonObject().getInteger(PORT_FIELD)));
+              result.complete(new InfectedHost(hostWithEnvironment, ar.result().bodyAsJsonObject().getInteger(TOPOLOGY_SERVICE_PORT)));
             } else {
               result.fail(ar.cause());
             }

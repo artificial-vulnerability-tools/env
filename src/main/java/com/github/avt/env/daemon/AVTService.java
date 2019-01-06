@@ -17,16 +17,17 @@
 
 package com.github.avt.env.daemon;
 
+import com.github.avt.env.util.Utils;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.github.avt.env.daemon.InfectionService.INFECTION_ADDRESS;
 
@@ -41,19 +42,20 @@ public class AVTService extends AbstractVerticle {
   public static final String NAME_OF_JAR_WITH_VIRUS = "virus.jar";
   public static final String INFECT_PATH = "/infect";
   public static final String VIRUS_TOPOLOGY_ON_PORT = "/infected";
-  public static final String PORT_FIELD = "port";
+  public static final String TOPOLOGY_SERVICE_PORT = "topology_service_port";
   public static final String SEPARATOR = System.getProperty("file.separator");
 
   private final ReactivePort reactivePort = new ReactivePort();
-  private final Integer actualPort;
+  private final Integer avtServicePort;
+  private final AtomicInteger virusTopologyServicePort = new AtomicInteger(0);
 
   public AVTService() {
     this(DEFAULT_PORT);
   }
 
   public AVTService(Integer port) {
-    actualPort = port;
-    log = LoggerFactory.getLogger(AVTService.class + ":" + actualPort);
+    avtServicePort = port;
+    log = LoggerFactory.getLogger(AVTService.class + ":" + avtServicePort);
   }
 
   @Override
@@ -71,8 +73,11 @@ public class AVTService extends AbstractVerticle {
           if (dirCreation.succeeded()) {
             log.info("Directory " + dirNameToCreate + " has been created");
             vertx.fileSystem().writeFile(jarFileName, body, done -> {
-              vertx.eventBus().send(INFECTION_ADDRESS + ":" + actualPort, jarFileName);
-              reactivePort.whenInfected(port -> routingContext.response().end(new JsonObject().put(PORT_FIELD, port).toBuffer()));
+              vertx.eventBus().send(INFECTION_ADDRESS + ":" + avtServicePort, jarFileName);
+              reactivePort.whenInfected(port -> {
+                virusTopologyServicePort.set(port);
+                routingContext.response().end(Utils.virusPortJson(port).toBuffer());
+              });
             });
           } else {
             log.error("Unable to create a directory for a virus", dirCreation.cause());
@@ -82,7 +87,7 @@ public class AVTService extends AbstractVerticle {
     });
     router.post(VIRUS_TOPOLOGY_ON_PORT).handler(routingContext -> {
       routingContext.request().bodyHandler(body -> {
-        Integer infectedPort = body.toJsonObject().getInteger(PORT_FIELD);
+        Integer infectedPort = body.toJsonObject().getInteger(TOPOLOGY_SERVICE_PORT);
         log.info("Received INFECTED ack on port " + infectedPort);
         reactivePort.infectedPort(infectedPort);
       });
@@ -95,10 +100,10 @@ public class AVTService extends AbstractVerticle {
         log.info(AVT_HOME_DIR + " already exists");
       }
       Future<String> infectionVerticleDeployed = Future.future();
-      vertx.deployVerticle(new InfectionService(actualPort), infectionVerticleDeployed);
+      vertx.deployVerticle(new InfectionService(avtServicePort), infectionVerticleDeployed);
       infectionVerticleDeployed.compose(id -> {
         Future<HttpServer> listenFuture = Future.future();
-        server.requestHandler(router).listen(actualPort, listenFuture);
+        server.requestHandler(router).listen(avtServicePort, listenFuture);
         return listenFuture;
       }).setHandler(event -> {
         if (event.succeeded()) {
@@ -115,6 +120,6 @@ public class AVTService extends AbstractVerticle {
   private String dirName() {
     var dtf = DateTimeFormatter.ofPattern("yyyy_MM_dd__HH_mm_ss_SSS");
     var now = LocalDateTime.now();
-    return "port_" + actualPort + "_time_" + dtf.format(now);
+    return "port_" + avtServicePort + "_time_" + dtf.format(now);
   }
 }

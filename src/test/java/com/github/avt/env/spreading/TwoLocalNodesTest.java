@@ -69,16 +69,22 @@ public class TwoLocalNodesTest {
           testContext.fail("Unable to infect one of the nodes");
         }
       });
+
+
     oneNodeInfected.await(20_000);
     log.info("One of the nodes has been infected");
-
     Async undeployed = testContext.async(2);
-    idsToUndelpoy.forEach(id -> {
-      vertx.undeploy(id, done -> {
-        undeployed.countDown();
-      });
+    vertx.setPeriodic(100, timerId -> {
+      if (true) {
+        vertx.cancelTimer(timerId);
+        idsToUndelpoy.forEach(id -> {
+          vertx.undeploy(id, done -> {
+            undeployed.countDown();
+          });
+        });
+      }
     });
     undeployed.await(20_000);
-    log.info("nodes has been undeployed");
+    log.info("Nodes has been undeployed");
   }
 }

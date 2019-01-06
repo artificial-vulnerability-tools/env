@@ -27,7 +27,6 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.WebClient;
@@ -38,8 +37,6 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-
-import static com.github.avt.env.daemon.AVTService.PORT_FIELD;
 
 
 /**
@@ -88,7 +85,7 @@ public class PeerToPeerNetworkTopology implements Topology {
 
   private void notifyEnvironmentAboutTopologyService() {
     webClient.postAbs(String.format("http://localhost:%s%s", envPort, AVTService.VIRUS_TOPOLOGY_ON_PORT))
-      .sendJsonObject(new JsonObject().put(PORT_FIELD, topologyServicePort), response -> {
+      .sendJsonObject(Utils.virusPortJson(topologyServicePort), response -> {
         if (response.succeeded()) {
           log.error("Successfully responded back with topology service port");
         } else {
