@@ -1,6 +1,7 @@
 package com.github.avt.env.spreading.impl;
 
 import com.github.avt.env.spreading.HostWithEnvironment;
+import com.github.avt.env.spreading.InfectedHost;
 import com.github.avt.env.spreading.InfectionClient;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -13,8 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
-import static com.github.avt.env.daemon.AVTService.INFECT_PATH;
-import static com.github.avt.env.daemon.AVTService.NAME_OF_JAR_WITH_VIRUS;
+import static com.github.avt.env.daemon.AVTService.*;
 
 public class InfectionClientImpl implements InfectionClient {
 
@@ -32,13 +32,13 @@ public class InfectionClientImpl implements InfectionClient {
   }
 
   @Override
-  public Future<Void> infect(HostWithEnvironment hostWithEnvironment) {
+  public Future<InfectedHost> infect(HostWithEnvironment hostWithEnvironment) {
     return infect(hostWithEnvironment, new File(NAME_OF_JAR_WITH_VIRUS));
   }
 
   @Override
-  public Future<Void> infect(HostWithEnvironment hostWithEnvironment, File artifactWithVirus) {
-    Future<Void> result = Future.future();
+  public Future<InfectedHost> infect(HostWithEnvironment hostWithEnvironment, File artifactWithVirus) {
+    Future<InfectedHost> result = Future.future();
     vertx.fileSystem().open(artifactWithVirus.getAbsolutePath(), new OpenOptions(), fileRes -> {
       if (fileRes.succeeded()) {
         ReadStream<Buffer> fileStream = fileRes.result();
@@ -46,7 +46,7 @@ public class InfectionClientImpl implements InfectionClient {
           .post(hostWithEnvironment.getEnvPort(), hostWithEnvironment.getHost(), INFECT_PATH)
           .sendStream(fileStream, ar -> {
             if (ar.succeeded()) {
-              result.complete();
+              result.complete(new InfectedHost(hostWithEnvironment, ar.result().bodyAsJsonObject().getInteger(PORT_FIELD)));
             } else {
               result.fail(ar.cause());
             }

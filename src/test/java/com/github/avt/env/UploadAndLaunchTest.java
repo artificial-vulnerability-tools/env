@@ -63,7 +63,7 @@ public class UploadAndLaunchTest {
         Commons.TEST_FILE_WITH_VIRUS)
         .setHandler(ar -> {
           if (ar.succeeded()) {
-            log.info("Jar uploaded");
+            log.info("Virus topology service on port " + ar.result().getVirusPort());
             async.countDown();
           }
         });

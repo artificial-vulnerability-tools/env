@@ -6,7 +6,7 @@ import java.io.File;
 
 public interface InfectionClient {
 
-  Future<Void> infect(HostWithEnvironment hostWithEnvironment);
+  Future<InfectedHost> infect(HostWithEnvironment hostWithEnvironment);
 
-  Future<Void> infect(HostWithEnvironment hostWithEnvironment, File artifactWithVirus);
+  Future<InfectedHost> infect(HostWithEnvironment hostWithEnvironment, File artifactWithVirus);
 }
