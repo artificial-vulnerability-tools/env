@@ -96,7 +96,7 @@ public class InfectionService extends AbstractVerticle {
         e.printStackTrace();
       }
     });
-    log.info("InfectionService successfully started on address: " + addressToListen);
+    log.info("InfectionService successfully started");
   }
 
   @Override
