@@ -65,29 +65,29 @@ public class UploadAndLaunchTest {
         .setHandler(ar -> {
           if (ar.succeeded()) {
             log.info("Virus topology service on port " + ar.result().topologyServicePort());
+            vertx.setPeriodic(100, timerId -> {
+              List<String> currentFiles = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
+              currentFiles.removeAll(startTestDirs.get());
+              if (currentFiles.size() == 1) {
+                List<String> files = vertx.fileSystem()
+                  .readDirBlocking(currentFiles.get(0))
+                  .stream().map(File::new)
+                  .map(File::getName)
+                  .collect(Collectors.toList());
+
+                if (files.contains(TEST_FILE_NAME + "." + AVTService.DEFAULT_PORT)) {
+                  vertx.cancelTimer(timerId);
+                  vertx.undeploy(deploymentId, undeployed -> {
+                    async.countDown();
+                  });
+                }
+              }
+            });
             async.countDown();
           } else {
             log.error("Unable to infect", ar.cause());
           }
         });
-      vertx.setPeriodic(100, timerId -> {
-        List<String> currentFiles = vertx.fileSystem().readDirBlocking(AVT_HOME_DIR);
-        currentFiles.removeAll(startTestDirs.get());
-        if (currentFiles.size() == 1) {
-          List<String> files = vertx.fileSystem()
-            .readDirBlocking(currentFiles.get(0))
-            .stream().map(File::new)
-            .map(File::getName)
-            .collect(Collectors.toList());
-
-          if (files.contains(TEST_FILE_NAME + "." + AVTService.DEFAULT_PORT)) {
-            vertx.cancelTimer(timerId);
-            vertx.undeploy(deploymentId, undeployed -> {
-              async.countDown();
-            });
-          }
-        }
-      });
     });
 
     vertx.setTimer(10_0000, event -> {
