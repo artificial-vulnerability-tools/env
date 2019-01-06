@@ -58,10 +58,6 @@ public class AVTService extends AbstractVerticle {
 
   @Override
   public void start(Future<Void> startFuture) {
-    var dirExist = vertx.fileSystem().existsBlocking(AVT_HOME_DIR);
-    if (!dirExist) {
-      vertx.fileSystem().mkdirBlocking(AVT_HOME_DIR);
-    }
     var server = vertx.createHttpServer();
     var router = Router.router(vertx);
     router.post(INFECT_PATH).handler(routingContext -> {
@@ -91,20 +87,28 @@ public class AVTService extends AbstractVerticle {
         reactivePort.infectedPort(infectedPort);
       });
     });
-    Future<String> infectionVerticleDeployed = Future.future();
-    vertx.deployVerticle(new InfectionService(actualPort), infectionVerticleDeployed);
-    infectionVerticleDeployed.compose(id -> {
-      Future<HttpServer> listenFuture = Future.future();
-      server.requestHandler(router).listen(actualPort, listenFuture);
-      return listenFuture;
-    }).setHandler(event -> {
-      if (event.succeeded()) {
-        log.info("AVTService successfully started");
-        startFuture.complete();
+
+    vertx.fileSystem().mkdir(AVT_HOME_DIR, done -> {
+      if (done.succeeded()) {
+        log.info(AVT_HOME_DIR + " dir has been created");
       } else {
-        log.error("Unable to start the AVTService", event.cause());
-        startFuture.fail(event.cause());
+        log.info(AVT_HOME_DIR + " already exists");
       }
+      Future<String> infectionVerticleDeployed = Future.future();
+      vertx.deployVerticle(new InfectionService(actualPort), infectionVerticleDeployed);
+      infectionVerticleDeployed.compose(id -> {
+        Future<HttpServer> listenFuture = Future.future();
+        server.requestHandler(router).listen(actualPort, listenFuture);
+        return listenFuture;
+      }).setHandler(event -> {
+        if (event.succeeded()) {
+          log.info("AVTService successfully started");
+          startFuture.complete();
+        } else {
+          log.error("Unable to start the AVTService", event.cause());
+          startFuture.fail(event.cause());
+        }
+      });
     });
   }
 
