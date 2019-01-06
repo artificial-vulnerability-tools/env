@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static com.github.avt.env.Commons.LOCALHOST;
 import static com.github.avt.env.TestLauncher.TEST_FILE_NAME;
 import static com.github.avt.env.daemon.AVTService.AVT_HOME_DIR;
 
@@ -59,12 +60,14 @@ public class UploadAndLaunchTest {
       Objects.requireNonNull(deploymentId);
       startTestDirs.set(vertx.fileSystem().readDirBlocking(AVT_HOME_DIR));
       infectionClient.infect(
-        new HostWithEnvironment("localhost", AVTService.DEFAULT_PORT),
+        new HostWithEnvironment(LOCALHOST, AVTService.DEFAULT_PORT),
         Commons.TEST_FILE_WITH_VIRUS)
         .setHandler(ar -> {
           if (ar.succeeded()) {
             log.info("Virus topology service on port " + ar.result().topologyServicePort());
             async.countDown();
+          } else {
+            log.error("Unable to infect", ar.cause());
           }
         });
       vertx.setPeriodic(100, timerId -> {

@@ -20,6 +20,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import static com.github.avt.env.Commons.LOCALHOST;
+
 @RunWith(VertxUnitRunner.class)
 public class TwoLocalNodesTest {
 
@@ -30,7 +32,6 @@ public class TwoLocalNodesTest {
 
   private final Integer FIRST_ENV_NODE_PORT = 2222;
   private final Integer SECOND_ENV_NODE_PORT = 2223;
-  private final String LOCALHOST = "127.0.0.1";
   private final HostWithEnvironment FIRST_HOST_WITH_ENV = new HostWithEnvironment(LOCALHOST, FIRST_ENV_NODE_PORT);
   private final HostWithEnvironment SECOND_HOST_WITH_ENV = new HostWithEnvironment(LOCALHOST, SECOND_ENV_NODE_PORT);
 
