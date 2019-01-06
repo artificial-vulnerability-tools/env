@@ -78,7 +78,7 @@ public class InfectionService extends AbstractVerticle {
           if (je.isDirectory() || !je.getName().endsWith(".class")) {
             continue;
           }
-          // -6 because of .class
+          // -6 because of '.class' = 6 symbols
           String className = je.getName().substring(0, je.getName().length() - 6);
           className = className.replace('/', '.');
           try {
