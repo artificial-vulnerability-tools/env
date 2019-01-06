@@ -18,6 +18,9 @@
 package com.github.avt.env;
 
 import com.github.avt.env.extend.Launcher;
+import com.github.avt.env.spreading.Network;
+import com.github.avt.env.spreading.Topology;
+import com.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
 import io.vertx.core.Vertx;
 
 public class TestLauncher extends Launcher {
@@ -25,8 +28,12 @@ public class TestLauncher extends Launcher {
   public static final String TEST_FILE_NAME = "test-file.hello";
 
   @Override
+  public Topology topology() {
+    return new PeerToPeerNetworkTopology(new Network(Network.NetworkType.LOCAL));
+  }
+
+  @Override
   public void launch(int envPort) {
-    System.out.println("Hello world");
     Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
   }
 }

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Optional;
 
 import static com.github.avt.env.daemon.AVTService.*;
 
@@ -29,6 +30,26 @@ public class InfectionClientImpl implements InfectionClient {
 
   public InfectionClientImpl() {
     this(Vertx.vertx());
+  }
+
+  @Override
+  public Future<Optional<Integer>> topologyServicePort(HostWithEnvironment hostWithEnvironment) {
+    Future<Optional<Integer>> result = Future.future();
+    webClient
+      .get(hostWithEnvironment.getEnvPort(), hostWithEnvironment.getHost(), VIRUS_TOPOLOGY_ON_PORT)
+      .send(event -> {
+        if (event.succeeded()) {
+          Integer toplogyServicePort = event.result().bodyAsJsonObject().getInteger(TOPOLOGY_SERVICE_PORT);
+          if (toplogyServicePort != 0) {
+            result.complete(Optional.of(toplogyServicePort));
+          } else {
+            result.complete(Optional.empty());
+          }
+        } else {
+          result.fail(event.cause());
+        }
+      });
+    return result;
   }
 
   @Override

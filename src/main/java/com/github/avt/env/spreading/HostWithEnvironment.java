@@ -20,8 +20,8 @@ public class HostWithEnvironment implements HasVertxSocketAddress {
   public HostWithEnvironment(String uri) {
     Objects.requireNonNull(uri);
     var split = uri.split(":");
-    if (split.length >= 2) {
-      throw new IllegalStateException("uri should have at least host and port");
+    if (split.length < 2) {
+      throw new IllegalStateException(String.format("Uri[%s] should have at least host and port", uri));
     }
     host = split[0];
     envPort = Integer.parseInt(split[1]);

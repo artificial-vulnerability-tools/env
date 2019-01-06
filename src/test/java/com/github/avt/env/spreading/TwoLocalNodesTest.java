@@ -31,6 +31,8 @@ public class TwoLocalNodesTest {
   private final Integer FIRST_ENV_NODE_PORT = 2222;
   private final Integer SECOND_ENV_NODE_PORT = 2223;
   private final String LOCALHOST = "localhost";
+  private final HostWithEnvironment FIRST_HOST_WITH_ENV = new HostWithEnvironment(LOCALHOST, FIRST_ENV_NODE_PORT);
+  private final HostWithEnvironment SECOND_HOST_WITH_ENV = new HostWithEnvironment(LOCALHOST, SECOND_ENV_NODE_PORT);
 
   @Test
   public void infectionShouldSpread(TestContext testContext) throws IOException, InterruptedException {
@@ -51,40 +53,39 @@ public class TwoLocalNodesTest {
     async.await();
     log.info("2 AVT verticles have been deployed");
     Async oneNodeInfected = testContext.async();
-    if (Commons.TEST_FILE_WITH_VIRUS.exists()) {
-      log.info("Uploading file with virus at " + Commons.TEST_FILE_WITH_VIRUS.getCanonicalPath());
-    } else {
-      testContext.fail("Unable to fina file with virus");
-    }
     infectionClient.infect(
       new HostWithEnvironment(LOCALHOST, FIRST_ENV_NODE_PORT),
       Commons.TEST_FILE_WITH_VIRUS)
       .setHandler(event -> {
         if (event.succeeded()) {
           InfectedHost infectedHost = new InfectedHost(new HostWithEnvironment(LOCALHOST, SECOND_ENV_NODE_PORT), Utils.pickRandomFreePort());
-          log.info("Forcing " + event.result() + " to infect " + infectedHost);
+          log.info("Forcing " + event.result() + " to infect " + SECOND_HOST_WITH_ENV);
           gossipClient.gossipWith(event.result(), Set.of(infectedHost));
           oneNodeInfected.countDown();
         } else {
           testContext.fail("Unable to infect one of the nodes");
         }
       });
-
-
-    oneNodeInfected.await(20_000);
+    oneNodeInfected.await(10_000);
     log.info("One of the nodes has been infected");
     Async undeployed = testContext.async(2);
-    vertx.setPeriodic(100, timerId -> {
-      if (true) {
-        vertx.cancelTimer(timerId);
-        idsToUndeploy.forEach(id -> {
-          vertx.undeploy(id, done -> {
-            undeployed.countDown();
+    vertx.setPeriodic(500, timerId -> {
+      infectionClient.topologyServicePort(SECOND_HOST_WITH_ENV).setHandler(event -> {
+        if (event.succeeded() && event.result().isPresent()) {
+          InfectedHost secondInfectedHost = new InfectedHost(SECOND_HOST_WITH_ENV, event.result().get());
+          gossipClient.gossipWith(new InfectedHost(SECOND_HOST_WITH_ENV, event.result().get()), Set.of()).setHandler(gossipResult -> {
+            if (gossipResult.succeeded()) {
+              Set<InfectedHost> result = gossipResult.result();
+              if (result.contains(secondInfectedHost)) {
+                vertx.cancelTimer(timerId);
+                idsToUndeploy.forEach(id -> vertx.undeploy(id, done -> undeployed.countDown()));
+              }
+            }
           });
-        });
-      }
+        }
+      });
     });
-    undeployed.await(20_000);
+    undeployed.await(10_000);
     log.info("Nodes has been undeployed");
   }
 }

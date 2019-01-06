@@ -18,10 +18,7 @@
 package com.github.avt.env.spreading.impl;
 
 import com.github.avt.env.daemon.AVTService;
-import com.github.avt.env.spreading.InfectedHost;
-import com.github.avt.env.spreading.InfectionClient;
-import com.github.avt.env.spreading.Network;
-import com.github.avt.env.spreading.Topology;
+import com.github.avt.env.spreading.*;
 import com.github.avt.env.util.Utils;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -48,17 +45,18 @@ import java.util.Set;
  */
 public class PeerToPeerNetworkTopology implements Topology {
 
-  public static final Logger log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class);
+  public final Logger log;
   public static final Integer DELAY = 1000;
   public static final Integer PEER_TO_PEER_TOPOLOGY_DEFAULT_PORT = 2222;
   private final WebClient webClient;
-  private Set<InfectedHost> peers = new ConcurrentHashSet<>();
+  private final Set<InfectedHost> peers = new ConcurrentHashSet<>();
   public final Integer topologyServicePort;
   private final Vertx vertx;
   private final InfectionClient infectionClient;
   private final NetClient netClient;
   private final String networkHost;
-  private int envPort;
+  private volatile int envPort;
+  private volatile InfectedHost thisPeer;
 
   private Random rnd = new Random();
 
@@ -69,6 +67,7 @@ public class PeerToPeerNetworkTopology implements Topology {
     this.infectionClient = new InfectionClientImpl(vertx);
     this.topologyServicePort = topologyServicePort;
     this.networkHost = network.getHostAddressInTheNetworkBlocking();
+    log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class.getName() + ":" + topologyServicePort);
   }
 
   public PeerToPeerNetworkTopology(Network network) {
@@ -78,6 +77,8 @@ public class PeerToPeerNetworkTopology implements Topology {
   @Override
   public void runTopologyService(int envPort) {
     this.envPort = envPort;
+    this.thisPeer = new InfectedHost(new HostWithEnvironment(networkHost, envPort), topologyServicePort);
+    peers.add(thisPeer);
     notifyEnvironmentAboutTopologyService();
     startGossipPassiveService();
     startGossipActiveService();
@@ -128,13 +129,17 @@ public class PeerToPeerNetworkTopology implements Topology {
   }
 
   private Optional<InfectedHost> pickRandomPeer() {
-    int size = peers.size();
-    int item = rnd.nextInt(size); // In real life, the Random object should be rather more shared than this
-    int i = 0;
-    for (var obj : peers) {
-      if (i == item)
-        return Optional.ofNullable(obj);
-      i++;
+    var setOfPeerToChoseFrom = new HashSet<>(peers);
+    setOfPeerToChoseFrom.remove(thisPeer);
+    if (setOfPeerToChoseFrom.size() > 0) {
+      int size = peers.size();
+      int item = rnd.nextInt(size); // In real life, the Random object should be rather more shared than this
+      int i = 0;
+      for (var obj : setOfPeerToChoseFrom) {
+        if (i == item)
+          return Optional.ofNullable(obj);
+        i++;
+      }
     }
     return Optional.empty();
   }
@@ -151,7 +156,7 @@ public class PeerToPeerNetworkTopology implements Topology {
           peers.add(infectedHost);
         });
         var responseJson = new JsonArray();
-        responsePeers.forEach(responseJson::add);
+        responsePeers.stream().map(InfectedHost::toString).forEach(responseJson::add);
         ctx.response().end(responseJson.toBuffer());
       });
     });

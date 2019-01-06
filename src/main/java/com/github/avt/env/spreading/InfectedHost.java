@@ -18,9 +18,9 @@ public class InfectedHost implements HasVertxSocketAddress {
   public InfectedHost(String uri) {
     hostWithEnv = new HostWithEnvironment(uri);
     var split = uri.split(":");
-    if (split.length >= 3) {
-      throw new IllegalStateException("Not able to parse InfectedHost from string. " +
-        "Uri should have at least host, port and virus port");
+    if (split.length < 3) {
+      throw new IllegalStateException(String.format("Not able to parse InfectedHost from string. " +
+        "Uri[%s] should have at least host, port and virus port", uri));
     }
     virusPort = Integer.parseInt(split[2]);
   }
