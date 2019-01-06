@@ -110,18 +110,18 @@ public class PeerToPeerNetworkTopology implements Topology {
       }
       InfectedHost gossipTarget = optionSocketAddress.get();
       checkIfNeedToInfect(gossipTarget)
-        .compose(needToInfect -> {
-          if (needToInfect) {
-            return infectionClient.infect(gossipTarget.getHostWithEnv());
+        .setHandler(needToInfect -> {
+          if (needToInfect.result()) {
+            infectionClient.infect(gossipTarget.getHostWithEnv());
           } else {
-            return gossip(gossipTarget);
+            gossip(gossipTarget);
           }
         });
     });
   }
 
-  private Future<Void> gossip(InfectedHost gossipTarget) {
-    return null;
+  private void gossip(InfectedHost gossipTarget) {
+
   }
 
   private Future<Boolean> checkIfNeedToInfect(InfectedHost gossipTarget) {
