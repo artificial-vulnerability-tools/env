@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 /**
@@ -53,6 +54,7 @@ public class PeerToPeerNetworkTopology implements Topology {
   public final Integer topologyServicePort;
   private final Vertx vertx;
   private final InfectionClient infectionClient;
+  private final GossipClient gossipClient;
   private final NetClient netClient;
   private final String networkHost;
   private volatile int envPort;
@@ -67,7 +69,8 @@ public class PeerToPeerNetworkTopology implements Topology {
     this.infectionClient = new InfectionClientImpl(vertx);
     this.topologyServicePort = topologyServicePort;
     this.networkHost = network.getHostAddressInTheNetworkBlocking();
-    log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class.getName() + ":" + topologyServicePort);
+    this.log = LoggerFactory.getLogger(PeerToPeerNetworkTopology.class.getName() + ":" + topologyServicePort);
+    this.gossipClient = new GossipClientImpl(vertx);
   }
 
   public PeerToPeerNetworkTopology(Network network) {
@@ -88,7 +91,7 @@ public class PeerToPeerNetworkTopology implements Topology {
     webClient.postAbs(String.format("http://localhost:%s%s", envPort, AVTService.VIRUS_TOPOLOGY_ON_PORT))
       .sendJsonObject(Utils.virusPortJson(topologyServicePort), response -> {
         if (response.succeeded()) {
-          log.error("Successfully responded back with topology service port");
+          log.info("Successfully responded back with topology service port");
         } else {
           log.error("Unable to respond back with topology service port", response.cause());
         }
@@ -101,31 +104,78 @@ public class PeerToPeerNetworkTopology implements Topology {
   }
 
   private void startGossipActiveService() {
-    vertx.setPeriodic(DELAY, event -> {
-      Optional<InfectedHost> optionSocketAddress = pickRandomPeer();
-      if (optionSocketAddress.isEmpty()) {
-        return;
-      }
-      InfectedHost gossipTarget = optionSocketAddress.get();
-      checkIfNeedToInfect(gossipTarget)
-        .setHandler(needToInfect -> {
-          if (needToInfect.result()) {
-            infectionClient.infect(gossipTarget.getHostWithEnv());
-          } else {
-            gossip(gossipTarget);
-          }
-        });
+    runActiveServiceTimer();
+  }
+
+  private void runActiveServiceTimer() {
+    vertx.setTimer(DELAY, id -> {
+      log.info("Time to gossip with someone");
+      gossipWithSomeOne().setHandler(result -> {
+        log.info("One session of gossip has been ended");
+        runActiveServiceTimer();
+      });
     });
   }
 
-  private void gossip(InfectedHost gossipTarget) {
-
+  private Future<Void> gossipWithSomeOne() {
+    Future<Void> gossipDone = Future.future();
+    Optional<InfectedHost> optionSocketAddress = pickRandomPeer();
+    if (optionSocketAddress.isEmpty()) {
+      gossipDone.complete();
+      return gossipDone;
+    }
+    InfectedHost gossipTarget = optionSocketAddress.get();
+    infectionClient.topologyServicePort(gossipTarget.getHostWithEnv()).setHandler(res -> {
+      if (res.succeeded()) {
+        Optional<Integer> result = res.result();
+        if (result.isPresent()) {
+          Integer discoveredSerivcePort = result.get();
+          var actualGossipTarget = new InfectedHost(gossipTarget.getHostWithEnv(), discoveredSerivcePort);
+          log.info(String.format("Topology service detected: %s. Start gossiping....", actualGossipTarget));
+          if (!gossipTarget.equals(actualGossipTarget)) {
+            peers.remove(gossipTarget);
+            peers.add(actualGossipTarget);
+          }
+          gossipClient.gossipWith(actualGossipTarget, peers).setHandler(gossipResponse -> {
+            if (gossipResponse.succeeded()) {
+              Set<InfectedHost> updates = gossipResponse.result();
+              updatePeers(updates);
+              gossipDone.complete();
+            } else {
+              log.error("Failed in attempt to gossip with " + actualGossipTarget, gossipResponse.cause());
+              gossipDone.fail(gossipResponse.cause());
+            }
+          });
+        } else {
+          log.info("No topology service detected. Spread infection to " + gossipTarget.getHostWithEnv());
+          infectionClient.infect(gossipTarget.getHostWithEnv()).setHandler(infectionResult -> {
+            if (infectionResult.succeeded()) {
+              log.info("Successfully infected: " + infectionResult.result());
+              peers.remove(gossipTarget);
+              peers.add(infectionResult.result());
+              // TODO consider if we need to gossip at this point
+              gossipDone.complete();
+            } else {
+              log.error("Unable to infect " + gossipTarget.getHostWithEnv());
+              gossipDone.fail(infectionResult.cause());
+            }
+          });
+        }
+      } else {
+        log.error("Unable to obtain topology service port from env: " + gossipTarget.getHostWithEnv(), res.cause());
+        gossipDone.fail(res.cause());
+      }
+    });
+    return gossipDone;
   }
 
-  private Future<Boolean> checkIfNeedToInfect(InfectedHost gossipTarget) {
-    Future<Boolean> result = Future.future();
-    netClient.connect(gossipTarget.toVertxSocketAddress(), event -> result.complete(event.failed()));
-    return result;
+  private void updatePeers(Set<InfectedHost> updates) {
+    updates.forEach(update -> {
+      boolean isNew = peers.add(update);
+      if (isNew) {
+        log.info("New peer discovered: " + update);
+      }
+    });
   }
 
   private Optional<InfectedHost> pickRandomPeer() {
@@ -133,7 +183,7 @@ public class PeerToPeerNetworkTopology implements Topology {
     setOfPeerToChoseFrom.remove(thisPeer);
     if (setOfPeerToChoseFrom.size() > 0) {
       int size = peers.size();
-      int item = rnd.nextInt(size); // In real life, the Random object should be rather more shared than this
+      int item = rnd.nextInt(size);
       int i = 0;
       for (var obj : setOfPeerToChoseFrom) {
         if (i == item)
@@ -151,10 +201,8 @@ public class PeerToPeerNetworkTopology implements Topology {
       ctx.request().bodyHandler(body -> {
         var responsePeers = new HashSet<>(peers);
         JsonArray objects = body.toJsonArray();
-        objects.stream().map(o -> (String) o).forEach(uri -> {
-          var infectedHost = new InfectedHost(uri);
-          peers.add(infectedHost);
-        });
+        Set<InfectedHost> updates = objects.stream().map(o -> (String) o).map(InfectedHost::new).collect(Collectors.toSet());
+        updatePeers(updates);
         var responseJson = new JsonArray();
         responsePeers.stream().map(InfectedHost::toString).forEach(responseJson::add);
         ctx.response().end(responseJson.toBuffer());

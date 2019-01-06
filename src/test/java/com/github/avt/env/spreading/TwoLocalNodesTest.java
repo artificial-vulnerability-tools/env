@@ -30,7 +30,7 @@ public class TwoLocalNodesTest {
 
   private final Integer FIRST_ENV_NODE_PORT = 2222;
   private final Integer SECOND_ENV_NODE_PORT = 2223;
-  private final String LOCALHOST = "localhost";
+  private final String LOCALHOST = "127.0.0.1";
   private final HostWithEnvironment FIRST_HOST_WITH_ENV = new HostWithEnvironment(LOCALHOST, FIRST_ENV_NODE_PORT);
   private final HostWithEnvironment SECOND_HOST_WITH_ENV = new HostWithEnvironment(LOCALHOST, SECOND_ENV_NODE_PORT);
 
@@ -72,20 +72,21 @@ public class TwoLocalNodesTest {
     vertx.setPeriodic(500, timerId -> {
       infectionClient.topologyServicePort(SECOND_HOST_WITH_ENV).setHandler(event -> {
         if (event.succeeded() && event.result().isPresent()) {
-          InfectedHost secondInfectedHost = new InfectedHost(SECOND_HOST_WITH_ENV, event.result().get());
           gossipClient.gossipWith(new InfectedHost(SECOND_HOST_WITH_ENV, event.result().get()), Set.of()).setHandler(gossipResult -> {
             if (gossipResult.succeeded()) {
               Set<InfectedHost> result = gossipResult.result();
-              if (result.contains(secondInfectedHost)) {
-                vertx.cancelTimer(timerId);
-                idsToUndeploy.forEach(id -> vertx.undeploy(id, done -> undeployed.countDown()));
-              }
+              result.forEach(each -> {
+                if (each.getHostWithEnv().equals(FIRST_HOST_WITH_ENV)) {
+                  vertx.cancelTimer(timerId);
+                  idsToUndeploy.forEach(id -> vertx.undeploy(id, done -> undeployed.countDown()));
+                }
+              });
             }
           });
         }
       });
     });
-    undeployed.await(10_000);
+    undeployed.await(20_000);
     log.info("Nodes has been undeployed");
   }
 }

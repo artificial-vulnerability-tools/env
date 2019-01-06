@@ -29,7 +29,7 @@ public class InfectedHost implements HasVertxSocketAddress {
     return hostWithEnv;
   }
 
-  public int getVirusPort() {
+  public int topologyServicePort() {
     return virusPort;
   }
 
@@ -48,12 +48,12 @@ public class InfectedHost implements HasVertxSocketAddress {
     if (this == o) return true;
     if (!(o instanceof InfectedHost)) return false;
     InfectedHost that = (InfectedHost) o;
-    return getVirusPort() == that.getVirusPort() &&
+    return topologyServicePort() == that.topologyServicePort() &&
       getHostWithEnv().equals(that.getHostWithEnv());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(getHostWithEnv(), getVirusPort());
+    return Objects.hash(getHostWithEnv(), topologyServicePort());
   }
 }
