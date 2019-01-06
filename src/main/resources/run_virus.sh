@@ -7,6 +7,7 @@ NAME_OF_JAR_WITH_VIRUS="virus.jar"
 
 mkdir logs
 echo $(whoami) > logs/whoami.log.txt
+java -version &> logs/java_version.log.txt
 echo ${VIRUS_CLASS} > logs/virus_class_name.log.txt
 echo ${ENV_PORT} > logs/env_port.log.txt
 
