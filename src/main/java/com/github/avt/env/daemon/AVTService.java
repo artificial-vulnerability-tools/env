@@ -90,7 +90,11 @@ public class AVTService extends AbstractVerticle {
         Integer infectedPort = body.toJsonObject().getInteger(TOPOLOGY_SERVICE_PORT);
         log.info("Received INFECTED ack on port " + infectedPort);
         reactivePort.infectedPort(infectedPort);
+        routingContext.response().end();
       });
+    });
+    router.get(VIRUS_TOPOLOGY_ON_PORT).handler(routingContext -> {
+      routingContext.response().end(Utils.virusPortJson(virusTopologyServicePort.get()).toBuffer());
     });
 
     vertx.fileSystem().mkdir(AVT_HOME_DIR, done -> {

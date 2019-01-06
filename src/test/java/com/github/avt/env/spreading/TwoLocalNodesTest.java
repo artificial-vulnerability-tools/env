@@ -34,14 +34,14 @@ public class TwoLocalNodesTest {
 
   @Test
   public void infectionShouldSpread(TestContext testContext) throws IOException, InterruptedException {
-    var idsToUndelpoy = Collections.synchronizedList(new LinkedList<String>());
+    var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     var env1 = new AVTService(FIRST_ENV_NODE_PORT);
     var env2 = new AVTService(SECOND_ENV_NODE_PORT);
     Async async = testContext.async(2);
     List.of(env1, env2).forEach(each -> {
       vertx.deployVerticle(each, event -> {
         if (event.succeeded()) {
-          idsToUndelpoy.add(event.result());
+          idsToUndeploy.add(event.result());
           async.countDown();
         } else {
           testContext.fail(event.cause());
@@ -77,7 +77,7 @@ public class TwoLocalNodesTest {
     vertx.setPeriodic(100, timerId -> {
       if (true) {
         vertx.cancelTimer(timerId);
-        idsToUndelpoy.forEach(id -> {
+        idsToUndeploy.forEach(id -> {
           vertx.undeploy(id, done -> {
             undeployed.countDown();
           });
