@@ -58,12 +58,14 @@ dependencies {
 // _______________________________
 // Custom tasks
 task packageTests(type: Jar) {
-  version = null
   baseName = project.name + '-test-fat'
   from configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) }
   from sourceSets.test.output
   from sourceSets.main.output
   from 'src/main/resources/run_virus.sh'
+
+  // in order to omit version in resulted file name
+  version = null
 }
 
 task cleanBinDirs {
