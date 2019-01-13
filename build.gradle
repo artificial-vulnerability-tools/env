@@ -58,7 +58,7 @@ dependencies {
 // _______________________________
 // Custom tasks
 task packageTests(type: Jar) {
-  baseName = project.name + '-test-fat'
+  archiveBaseName = project.name + '-test-fat'
   from configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) }
   from sourceSets.test.output
   from sourceSets.main.output
