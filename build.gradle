@@ -22,7 +22,7 @@ plugins {
   id 'signing'
 }
 
-mainClassName = 'io.github.artificial-vulnerability-tools.env.Main'
+mainClassName = 'io.github.avt.env.Main'
 group = 'io.github.artificial-vulnerability-tools'
 version = '0.0.1'
 
@@ -58,6 +58,7 @@ dependencies {
 // _______________________________
 // Custom tasks
 task packageTests(type: Jar) {
+  version = null
   baseName = project.name + '-test-fat'
   from configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) }
   from sourceSets.test.output
