@@ -1,3 +1,20 @@
+/*
+ *
+ * Copyright 2018 Pavel Drankou.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 plugins {
   id 'java'
   id 'application'
@@ -5,25 +22,15 @@ plugins {
   id 'signing'
 }
 
+mainClassName = 'io.github.artificial-vulnerability-tools.env.Main'
+group = 'io.github.artificial-vulnerability-tools'
+version = '0.0.1'
+
 repositories {
   jcenter()
   mavenLocal()
   mavenCentral()
 }
-
-task sourcesJar(type: Jar) {
-  classifier "sources"
-  from sourceSets.main.allJava
-}
-
-task javadocJar(type: Jar, dependsOn: javadoc) {
-  classifier "javadoc"
-  from javadoc.destinationDir
-}
-
-mainClassName = 'io.github.artificial-vulnerability-tools.env.Main'
-group = 'io.github.artificial-vulnerability-tools'
-version = '0.0.1'
 
 ext {
   vertx_version = '3.6.2'
@@ -63,6 +70,16 @@ task cleanBinDirs {
   binDir.deleteDir()
 }
 
+task sourcesJar(type: Jar) {
+  classifier "sources"
+  from sourceSets.main.allJava
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  classifier "javadoc"
+  from javadoc.destinationDir
+}
+
 // Task dependencies
 tasks.test.dependsOn(packageTests)
 tasks.clean.dependsOn(cleanBinDirs)
@@ -74,60 +91,47 @@ publishing {
       from components.java
       artifact sourcesJar
       artifact javadocJar
-      customizePom(pom)
+      pom {
+        name = 'env'
+        description = 'Artificial environment for epidemic virus spreading'
+        url = 'https://github.com/artificial-vulnerability-tools/env'
+        organization {
+          name = 'io.github.artificial-vulnerability-tools'
+          url = 'https://github.com/artificial-vulnerability-tools'
+        }
+        issueManagement {
+          system = 'GitHub'
+          url = 'https://github.com/artificial-vulnerability-tools/env/issues'
+        }
+        licenses {
+          license {
+            name = 'Apache License 2.0'
+            url = 'https://github.com/artificial-vulnerability-tools/env/blob/master/LICENSE'
+            distribution = 'repo'
+          }
+        }
+        scm {
+          url = 'https://github.com/artificial-vulnerability-tools/env'
+          connection = 'scm:git:git://github.com/artificial-vulnerability-tools/env.git'
+          developerConnection = 'scm:git:ssh://git@github.com:artificial-vulnerability-tools/env.git'
+        }
+        developers {
+          developer {
+            name = 'Pavel Drankou'
+          }
+        }
+      }
     }
   }
   repositories {
     maven {
-      url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+      // change URLs to point to your repos, e.g. http://my.org/repo
+      def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+      def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
       credentials {
         username sonatypeUsername
         password sonatypePassword
-      }
-    }
-  }
-}
-
-def customizePom(pom) {
-  pom.withXml {
-    def root = asNode()
-
-    // eliminate test-scoped dependencies (no need in maven central POMs)
-    root.dependencies.removeAll { dep ->
-      dep.scope == "test"
-    }
-
-    // add all items necessary for maven central publication
-    root.children().last() + {
-      resolveStrategy = Closure.DELEGATE_FIRST
-
-      description 'Artificial environment for epidemic virus spreading'
-      name 'env'
-      url 'https://github.com/artificial-vulnerability-tools/env'
-      organization {
-        name 'io.github.artificial-vulnerability-tools'
-        url 'https://github.com/artificial-vulnerability-tools'
-      }
-      issueManagement {
-        system 'GitHub'
-        url 'https://github.com/artificial-vulnerability-tools/env/issues'
-      }
-      licenses {
-        license {
-          name 'Apache License 2.0'
-          url 'https://github.com/artificial-vulnerability-tools/env/blob/master/LICENSE'
-          distribution 'repo'
-        }
-      }
-      scm {
-        url 'https://github.com/artificial-vulnerability-tools/env'
-        connection 'scm:git:git://github.com/artificial-vulnerability-tools/env.git'
-        developerConnection 'scm:git:ssh://git@github.com:artificial-vulnerability-tools/env.git'
-      }
-      developers {
-        developer {
-          name 'Pavel Drankov'
-        }
       }
     }
   }
