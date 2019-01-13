@@ -64,14 +64,13 @@ task cleanBinDirs {
 }
 
 // Task dependencies
-
 tasks.test.dependsOn(packageTests)
 tasks.clean.dependsOn(cleanBinDirs)
 
 publishing {
   publications {
     mavenJava(MavenPublication) {
-      artifactId = 'emv'
+      artifactId = 'env'
       from components.java
       artifact sourcesJar
       artifact javadocJar
