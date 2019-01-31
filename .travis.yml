@@ -15,4 +15,4 @@ cache:
     - $HOME/.gradle/wrapper/
     -
 script:
-  - ./gradlew clean build --info -PsonatypeUsername=$SONATYPE_USERNAME -PsonatypePassword=$SONATYPE_PASSOWORD
+  - ./gradlew clean env-core:build --info -PsonatypeUsername=$SONATYPE_USERNAME -PsonatypePassword=$SONATYPE_PASSOWORD
