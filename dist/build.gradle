@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-subprojects {
+plugins {
+  id 'application'
+}
 
-  apply plugin: 'java'
+mainClassName = 'io.github.avt.env.daemon.Main'
 
-  group = 'io.github.artificial-vulnerability-tools'
-  version = '0.0.1'
-  
-  repositories {
-    jcenter()
-    mavenLocal()
-    mavenCentral()
+dependencies {
+  compile project(":env-core")
+  compile group: 'ch.qos.logback', name: 'logback-classic', version: logback_version
+}
+
+jar {
+  from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  manifest {
+    attributes 'Main-Class': mainClassName
   }
-
-  ext {
-    vertx_version = '3.6.2'
-    slf4j_version = '1.7.25'
-    junit_version = '4.12'
-    logback_version = '1.0.9'
-  }
+  archiveBaseName = "env-dist"
 }
