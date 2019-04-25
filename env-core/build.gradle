@@ -51,7 +51,9 @@ task packageTests(type: Jar) {
 
 task cleanBinDirs {
   def binDir = new File('.avtenv')
+  def binDir2 = new File('env-core/.avtenv')
   binDir.deleteDir()
+  binDir2.deleteDir()
 }
 
 task sourcesJar(type: Jar) {
@@ -107,18 +109,18 @@ publishing {
       }
     }
   }
-  repositories {
-    maven {
-      // change URLs to point to your repos, e.g. http://my.org/repo
-      def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-      def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-      credentials {
-        username sonatypeUsername
-        password sonatypePassword
-      }
-    }
-  }
+//  repositories {
+//    maven {
+//      // change URLs to point to your repos, e.g. http://my.org/repo
+//      def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+//      def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+//      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+//      credentials {
+//        username sonatypeUsername
+//        password sonatypePassword
+//      }
+//    }
+//  }
 }
 
 signing {

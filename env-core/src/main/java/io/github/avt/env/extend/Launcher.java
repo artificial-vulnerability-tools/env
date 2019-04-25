@@ -19,12 +19,15 @@ package io.github.avt.env.extend;
 
 import io.github.avt.env.spreading.Network;
 import io.github.avt.env.spreading.Topology;
+import io.github.avt.env.spreading.TopologyInformation;
 import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
 
 /**
  * A base class for extending. Should be used by any virus.
  */
 public abstract class Launcher {
+
+  public volatile Topology topology;
 
   /**
    * You should override this method. Virus code should be executed inside this method.
@@ -38,8 +41,9 @@ public abstract class Launcher {
     return new PeerToPeerNetworkTopology(new Network(Network.NetworkType.IPv4_INTERNET));
   }
 
-  public void start(int envPort) {
-    topology().runTopologyService(envPort);
+  public synchronized void start(int envPort) {
+    topology = topology();
+    topology.runTopologyService(envPort);
     launch(envPort);
   }
 }

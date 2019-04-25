@@ -71,7 +71,7 @@ public class InfectionService extends AbstractVerticle {
 
         URL[] urls = {new URL("jar:file:" + jarFile + "!/")};
         URLClassLoader cl = URLClassLoader.newInstance(urls);
-
+        boolean virusRunFlag = false;
         while (e.hasMoreElements()) {
           JarEntry je = e.nextElement();
           if (je.isDirectory() || !je.getName().endsWith(".class")) {
@@ -80,19 +80,24 @@ public class InfectionService extends AbstractVerticle {
           // -6 because of '.class' = 6 symbols
           String className = je.getName().substring(0, je.getName().length() - 6);
           className = className.replace('/', '.');
+          log.debug("Analyzing {}", className);
           try {
             Class<?> aClass = cl.loadClass(className);
             Class<?> superclass = aClass.getSuperclass();
             if (superclass.getName().equals(Launcher.class.getName())) {
               log.info("Class to run " + aClass);
               runVirus(obtainedJarFile, aClass.getName(), event);
+              virusRunFlag = true;
             }
           } catch (Throwable exp) {
             // not able to load a class
           }
         }
+        if (!virusRunFlag) {
+          log.error("Unable to find a correct class to run");
+        }
       } catch (IOException e) {
-        e.printStackTrace();
+        log.error("an exception occurred", e);
       }
     });
     log.info("InfectionService successfully started");

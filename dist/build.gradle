@@ -19,7 +19,7 @@ plugins {
   id 'application'
 }
 
-mainClassName = 'io.github.avt.env.daemon.Main'
+mainClassName = 'io.github.avt.env.AvtEnvMain'
 
 dependencies {
   compile project(":env-core")

@@ -18,12 +18,20 @@
 package io.github.avt.env;
 
 import io.github.avt.env.extend.Launcher;
+import io.github.avt.env.spreading.ListOfPeers;
 import io.github.avt.env.spreading.Network;
 import io.github.avt.env.spreading.Topology;
+import io.github.avt.env.spreading.TopologyInformation;
 import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
 import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
 
 public class TestLauncher extends Launcher {
+
+  private static final Logger log = LoggerFactory.getLogger(TestLauncher.class);
 
   public static final String TEST_FILE_NAME = "test-file.hello";
 
@@ -33,8 +41,14 @@ public class TestLauncher extends Launcher {
   }
 
   @Override
-  public void launch(int envPort) {
+  public synchronized void launch(int envPort) {
     Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
+    TopologyInformation topologyInformation = topology.topologyInformation();
+    ListOfPeers peers = (ListOfPeers) topologyInformation;
+    Objects.requireNonNull(peers);
+    peers.newPeerHandler(peer -> {
+      log.info("DEVELOPER SEE: New peer is {}", peer);
+    });
   }
 }
 
