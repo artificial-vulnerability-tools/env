@@ -29,7 +29,7 @@ subprojects {
   }
 
   ext {
-    vertx_version = '3.6.2'
+    vertx_version = '3.7.0'
     slf4j_version = '1.7.25'
     junit_version = '4.12'
     logback_version = '1.0.9'
