@@ -4,7 +4,6 @@ import io.github.avt.env.Commons;
 import io.github.avt.env.daemon.AVTService;
 import io.github.avt.env.spreading.impl.GossipClientImpl;
 import io.github.avt.env.spreading.impl.InfectionClientImpl;
-import io.github.avt.env.util.Utils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -14,7 +13,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -68,9 +66,8 @@ public class TwoLocalNodesTest {
           testContext.fail("Unable to infect one of the nodes");
         }
       });
-    oneNodeInfected.await(10_000);
+    oneNodeInfected.await(30_000);
     log.info("One of the nodes has been infected");
-//    Thread.sleep(10000);
     Async undeployed = testContext.async(2);
     vertx.setPeriodic(500, timerId -> {
       infectionClient.topologyServicePort(SECOND_HOST_WITH_ENV).setHandler(event -> {
@@ -89,7 +86,7 @@ public class TwoLocalNodesTest {
         }
       });
     });
-    undeployed.await(20_000);
+    undeployed.await(30_000);
     log.info("Nodes has been undeployed");
   }
 }
