@@ -22,18 +22,27 @@ import io.github.avt.env.process.ProcessMap;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.file.CopyOptions;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -66,6 +75,10 @@ public class InfectionService extends AbstractVerticle {
       var obtainedJarFile = new File((String) event.body());
       log.info("Jar file to analyze:" + obtainedJarFile);
       try {
+
+        ClassPool pool = ClassPool.getDefault();
+        pool.insertClassPath(obtainedJarFile.getAbsolutePath());
+
         JarFile jarFile = new JarFile(obtainedJarFile);
         Enumeration<JarEntry> e = jarFile.entries();
 
@@ -80,24 +93,36 @@ public class InfectionService extends AbstractVerticle {
           // -6 because of '.class' = 6 symbols
           String className = je.getName().substring(0, je.getName().length() - 6);
           className = className.replace('/', '.');
-          log.debug("Analyzing {}", className);
+          StringBuilder report = new StringBuilder();
+          report.append("Analyzing class '").append(className).append("'. ");
+
           try {
-            Class<?> aClass = cl.loadClass(className);
-            Class<?> superclass = aClass.getSuperclass();
-            if (superclass.getName().equals(Launcher.class.getName())) {
-              log.info("Class to run " + aClass);
-              runVirus(obtainedJarFile, aClass.getName(), event);
+            CtClass ctClass = pool.get(className);
+            report.append("OK load. ");
+            CtClass superclass = ctClass.getSuperclass();
+            if (superclass == null) {
+              report.append("Superclass is null. ");
+            } else if (superclass.getName().equals(Launcher.class.getName())) {
+              log.info("Class to run " + ctClass.getName());
+              runVirus(obtainedJarFile, ctClass.getName(), event);
               virusRunFlag = true;
+              report.append("A class to run. ");
+            } else {
+              report.append("Not a class to run. ");
             }
           } catch (Throwable exp) {
-            // not able to load a class
+            log.error("Error", exp);
+            report.append("Error: " + exp.toString()).append(". ");
           }
+          log.debug(report.toString());
         }
         if (!virusRunFlag) {
           log.error("Unable to find a correct class to run");
         }
       } catch (IOException e) {
         log.error("an exception occurred", e);
+      } catch (NotFoundException e) {
+        log.error("Javaassist are not able to find uploaded virus .jar");
       }
     });
     log.info("InfectionService successfully started");
@@ -124,25 +149,15 @@ public class InfectionService extends AbstractVerticle {
 
   private void runVirus(File jar, String className, Message<Object> event) {
     try {
-      File bashScriptGen = new File(
-        Objects.requireNonNull(
-          Thread.currentThread().getContextClassLoader().getResource(VIRUS_SCRIPT_NAME)
-        ).toURI()
-      );
+      InputStream resourceAsStream = getClass().getResourceAsStream("/run_virus.sh");
+      Objects.requireNonNull(resourceAsStream);
       File parentDir = jar.getParentFile();
-      String originalBashScriptPath = bashScriptGen.getAbsolutePath();
       String copyScriptPath = parentDir.getAbsolutePath() + SEPARATOR + VIRUS_SCRIPT_NAME;
-      vertx.fileSystem().copy(originalBashScriptPath, copyScriptPath, new CopyOptions().setCopyAttributes(true), copyDone -> {
-        if (copyDone.succeeded()) {
-          log.info("Virus runner copied successfully");
-          runVirusScript(new File(copyScriptPath), className);
-          event.reply("OK");
-        } else {
-          log.error(String.format("Copy from %s to %s failed", originalBashScriptPath, parentDir.getAbsolutePath()), copyDone.cause());
-        }
-      });
-
-    } catch (URISyntaxException e) {
+      Files.copy(resourceAsStream, Path.of(copyScriptPath), StandardCopyOption.REPLACE_EXISTING);
+      log.info("Virus runner copied successfully");
+      runVirusScript(new File(copyScriptPath), className);
+      event.reply("OK");
+    } catch (IOException e) {
       log.error("Unable to lookup bash script 'run_virus.sh' path", e);
     }
   }

@@ -19,7 +19,6 @@ package io.github.avt.env.extend;
 
 import io.github.avt.env.spreading.Network;
 import io.github.avt.env.spreading.Topology;
-import io.github.avt.env.spreading.TopologyInformation;
 import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
 
 /**
@@ -31,11 +30,15 @@ public abstract class Launcher {
 
   /**
    * You should override this method. Virus code should be executed inside this method.
+   *
+   * @param envPort the env port
    */
   public abstract void launch(int envPort);
 
   /**
    * Related to the way how the virus spreads across the environment and overlay network topology.
+   *
+   * @return desired topology
    */
   public Topology topology() {
     return new PeerToPeerNetworkTopology(new Network(Network.NetworkType.IPv4_INTERNET));
