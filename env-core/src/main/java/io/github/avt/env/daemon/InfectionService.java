@@ -72,58 +72,61 @@ public class InfectionService extends AbstractVerticle {
   public void start() {
     var addressToListen = INFECTION_ADDRESS + ":" + avtServicePort;
     consumer = vertx.eventBus().consumer(addressToListen, event -> {
-      var obtainedJarFile = new File((String) event.body());
-      log.info("Jar file to analyze:" + obtainedJarFile);
-      try {
+      vertx.executeBlocking(h -> {
+        var obtainedJarFile = new File((String) event.body());
+        log.info("Jar file to analyze:" + obtainedJarFile);
+        try {
+          ClassPool pool = ClassPool.getDefault();
+          pool.insertClassPath(obtainedJarFile.getAbsolutePath());
 
-        ClassPool pool = ClassPool.getDefault();
-        pool.insertClassPath(obtainedJarFile.getAbsolutePath());
+          JarFile jarFile = new JarFile(obtainedJarFile);
+          Enumeration<JarEntry> e = jarFile.entries();
 
-        JarFile jarFile = new JarFile(obtainedJarFile);
-        Enumeration<JarEntry> e = jarFile.entries();
-
-        URL[] urls = {new URL("jar:file:" + jarFile + "!/")};
-        URLClassLoader cl = URLClassLoader.newInstance(urls);
-        boolean virusRunFlag = false;
-        while (e.hasMoreElements()) {
-          JarEntry je = e.nextElement();
-          if (je.isDirectory() || !je.getName().endsWith(".class")) {
-            continue;
-          }
-          // -6 because of '.class' = 6 symbols
-          String className = je.getName().substring(0, je.getName().length() - 6);
-          className = className.replace('/', '.');
-          StringBuilder report = new StringBuilder();
-          report.append("Analyzing class '").append(className).append("'. ");
-
-          try {
-            CtClass ctClass = pool.get(className);
-            report.append("OK load. ");
-            CtClass superclass = ctClass.getSuperclass();
-            if (superclass == null) {
-              report.append("Superclass is null. ");
-            } else if (superclass.getName().equals(Launcher.class.getName())) {
-              log.info("Class to run " + ctClass.getName());
-              runVirus(obtainedJarFile, ctClass.getName(), event);
-              virusRunFlag = true;
-              report.append("A class to run. ");
-            } else {
-              report.append("Not a class to run. ");
+          URL[] urls = {new URL("jar:file:" + jarFile + "!/")};
+          URLClassLoader cl = URLClassLoader.newInstance(urls);
+          boolean virusRunFlag = false;
+          while (e.hasMoreElements()) {
+            JarEntry je = e.nextElement();
+            if (je.isDirectory() || !je.getName().endsWith(".class")) {
+              continue;
             }
-          } catch (Throwable exp) {
-            log.error("Error", exp);
-            report.append("Error: " + exp.toString()).append(". ");
+            // -6 because of '.class' = 6 symbols
+            String className = je.getName().substring(0, je.getName().length() - 6);
+            className = className.replace('/', '.');
+            StringBuilder report = new StringBuilder();
+            report.append("Analyzing class '").append(className).append("'. ");
+
+            try {
+              CtClass ctClass = pool.get(className);
+              report.append("OK load. ");
+              CtClass superclass = ctClass.getSuperclass();
+              if (superclass == null) {
+                report.append("Superclass is null. ");
+              } else if (superclass.getName().equals(Launcher.class.getName())) {
+                log.info("Class to run " + ctClass.getName());
+                runVirus(obtainedJarFile, ctClass.getName(), event);
+                virusRunFlag = true;
+                report.append("A class to run. ");
+              } else {
+                report.append("Not a class to run. ");
+              }
+            } catch (Throwable exp) {
+              report.append("Error: " + exp.toString()).append(". ");
+            }
+            log.debug(report.toString());
           }
-          log.debug(report.toString());
+          if (!virusRunFlag) {
+            log.error("Unable to find a correct class to run");
+          }
+        } catch (IOException e) {
+          log.error("an exception occurred", e);
+        } catch (NotFoundException e) {
+          log.error("Javaassist are not able to find uploaded virus .jar");
         }
-        if (!virusRunFlag) {
-          log.error("Unable to find a correct class to run");
-        }
-      } catch (IOException e) {
-        log.error("an exception occurred", e);
-      } catch (NotFoundException e) {
-        log.error("Javaassist are not able to find uploaded virus .jar");
-      }
+        h.complete();
+      }, h -> {
+        log.info("Uploaded jar has been handled");
+      });
     });
     log.info("InfectionService successfully started");
   }
