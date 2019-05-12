@@ -26,20 +26,27 @@ import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
  */
 public abstract class Launcher {
 
+  public volatile Topology topology;
+
   /**
    * You should override this method. Virus code should be executed inside this method.
+   *
+   * @param envPort the env port
    */
   public abstract void launch(int envPort);
 
   /**
    * Related to the way how the virus spreads across the environment and overlay network topology.
+   *
+   * @return desired topology
    */
   public Topology topology() {
     return new PeerToPeerNetworkTopology(new Network(Network.NetworkType.IPv4_INTERNET));
   }
 
-  public void start(int envPort) {
-    topology().runTopologyService(envPort);
+  public synchronized void start(int envPort) {
+    topology = topology();
+    topology.runTopologyService(envPort);
     launch(envPort);
   }
 }

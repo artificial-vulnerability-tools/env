@@ -7,6 +7,11 @@ import java.util.Objects;
 
 public class InfectedHost implements HasVertxSocketAddress {
 
+  /**
+   * A constant meaning host is not infected.
+   */
+  public final static int NOT_INFECTED = 0;
+
   private final HostWithEnvironment hostWithEnv;
   private final int virusPort;
 

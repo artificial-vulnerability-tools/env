@@ -34,4 +34,8 @@ subprojects {
     junit_version = '4.12'
     logback_version = '1.0.9'
   }
+
+  task cleanBinDirs {
+    file('.avtenv').deleteDir()
+  }
 }

@@ -4,7 +4,6 @@ import io.github.avt.env.Commons;
 import io.github.avt.env.daemon.AVTService;
 import io.github.avt.env.spreading.impl.GossipClientImpl;
 import io.github.avt.env.spreading.impl.InfectionClientImpl;
-import io.github.avt.env.util.Utils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -35,6 +34,8 @@ public class TwoLocalNodesTest {
 
   @Test
   public void infectionShouldSpread(TestContext testContext) throws IOException, InterruptedException {
+    testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
+    log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     var env1 = new AVTService(FIRST_ENV_NODE_PORT);
     var env2 = new AVTService(SECOND_ENV_NODE_PORT);
@@ -57,7 +58,7 @@ public class TwoLocalNodesTest {
       Commons.TEST_FILE_WITH_VIRUS)
       .setHandler(event -> {
         if (event.succeeded()) {
-          InfectedHost infectedHost = new InfectedHost(new HostWithEnvironment(Commons.LOCALHOST, SECOND_ENV_NODE_PORT), Utils.pickRandomFreePort());
+          InfectedHost infectedHost = new InfectedHost(new HostWithEnvironment(Commons.LOCALHOST, SECOND_ENV_NODE_PORT), InfectedHost.NOT_INFECTED);
           log.info("Forcing " + event.result() + " to infect " + SECOND_HOST_WITH_ENV);
           gossipClient.gossipWith(event.result(), Set.of(infectedHost));
           oneNodeInfected.countDown();
@@ -65,7 +66,7 @@ public class TwoLocalNodesTest {
           testContext.fail("Unable to infect one of the nodes");
         }
       });
-    oneNodeInfected.await(10_000);
+    oneNodeInfected.await(30_000);
     log.info("One of the nodes has been infected");
     Async undeployed = testContext.async(2);
     vertx.setPeriodic(500, timerId -> {
@@ -85,7 +86,7 @@ public class TwoLocalNodesTest {
         }
       });
     });
-    undeployed.await(20_000);
+    undeployed.await(30_000);
     log.info("Nodes has been undeployed");
   }
 }

@@ -22,6 +22,9 @@ plugins {
 
 dependencies {
 
+  // byte code engineering
+  compile group: 'org.javassist', name: 'javassist', version: '3.25.0-GA'
+
   // Vert.X dependencies
   compile group: 'io.vertx', name: 'vertx-core', version: vertx_version
   compile group: 'io.vertx', name: 'vertx-web', version: vertx_version
@@ -49,9 +52,15 @@ task packageTests(type: Jar) {
   version = null
 }
 
-task cleanBinDirs {
-  def binDir = new File('.avtenv')
-  binDir.deleteDir()
+task printLogs() {
+  doLast {
+    println 'printing log files:'
+    def tree = fileTree(dir: '.avtenv', include: '**/*.txt')
+    tree.each { File file ->
+      println file.getAbsolutePath() + ":"
+      println file.getText()
+    }
+  }
 }
 
 task sourcesJar(type: Jar) {
@@ -66,7 +75,14 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 // Task dependencies
 tasks.test.dependsOn(packageTests)
-tasks.clean.dependsOn(cleanBinDirs)
+
+ext.sonnatypeDefined = project.hasProperty("sonatypeUsername")
+if (!project.hasProperty("sonatypeUsername")) {
+  ext.sonatypeUsername = "RandomUsername"
+}
+if (!project.hasProperty("sonatypePassword")) {
+  ext.sonatypePassword = "RandomPassword"
+}
 
 publishing {
   publications {
@@ -121,6 +137,8 @@ publishing {
   }
 }
 
-signing {
-  sign publishing.publications.mavenJava
+if (sonnatypeDefined) {
+  signing {
+    sign publishing.publications.mavenJava
+  }
 }

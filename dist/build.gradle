@@ -19,10 +19,12 @@ plugins {
   id 'application'
 }
 
-mainClassName = 'io.github.avt.env.daemon.Main'
+mainClassName = 'io.github.avt.env.AvtEnvMain'
 
 dependencies {
   compile project(":env-core")
+  // https://mvnrepository.com/artifact/commons-cli/commons-cli
+  compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
   compile group: 'ch.qos.logback', name: 'logback-classic', version: logback_version
 }
 

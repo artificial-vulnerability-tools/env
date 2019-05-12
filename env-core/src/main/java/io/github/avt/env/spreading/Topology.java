@@ -20,10 +20,17 @@ package io.github.avt.env.spreading;
 /**
  * Defines the way a virus can spread across the environment.
  */
-public interface Topology {
+public interface Topology<T extends TopologyInformation> {
+
+  /**
+   * @return a information about topology
+   */
+  T topologyInformation();
 
   /**
    * Launches the service, related to a specific network topology.
+   *
+   * @param envPort the env port
    */
   void runTopologyService(int envPort);
 

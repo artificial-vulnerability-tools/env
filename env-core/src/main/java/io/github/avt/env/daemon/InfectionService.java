@@ -22,18 +22,27 @@ import io.github.avt.env.process.ProcessMap;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.file.CopyOptions;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -63,37 +72,61 @@ public class InfectionService extends AbstractVerticle {
   public void start() {
     var addressToListen = INFECTION_ADDRESS + ":" + avtServicePort;
     consumer = vertx.eventBus().consumer(addressToListen, event -> {
-      var obtainedJarFile = new File((String) event.body());
-      log.info("Jar file to analyze:" + obtainedJarFile);
-      try {
-        JarFile jarFile = new JarFile(obtainedJarFile);
-        Enumeration<JarEntry> e = jarFile.entries();
+      vertx.executeBlocking(h -> {
+        var obtainedJarFile = new File((String) event.body());
+        log.info("Jar file to analyze:" + obtainedJarFile);
+        try {
+          ClassPool pool = ClassPool.getDefault();
+          pool.insertClassPath(obtainedJarFile.getAbsolutePath());
 
-        URL[] urls = {new URL("jar:file:" + jarFile + "!/")};
-        URLClassLoader cl = URLClassLoader.newInstance(urls);
+          JarFile jarFile = new JarFile(obtainedJarFile);
+          Enumeration<JarEntry> e = jarFile.entries();
 
-        while (e.hasMoreElements()) {
-          JarEntry je = e.nextElement();
-          if (je.isDirectory() || !je.getName().endsWith(".class")) {
-            continue;
-          }
-          // -6 because of '.class' = 6 symbols
-          String className = je.getName().substring(0, je.getName().length() - 6);
-          className = className.replace('/', '.');
-          try {
-            Class<?> aClass = cl.loadClass(className);
-            Class<?> superclass = aClass.getSuperclass();
-            if (superclass.getName().equals(Launcher.class.getName())) {
-              log.info("Class to run " + aClass);
-              runVirus(obtainedJarFile, aClass.getName(), event);
+          URL[] urls = {new URL("jar:file:" + jarFile + "!/")};
+          URLClassLoader cl = URLClassLoader.newInstance(urls);
+          boolean virusRunFlag = false;
+          while (e.hasMoreElements()) {
+            JarEntry je = e.nextElement();
+            if (je.isDirectory() || !je.getName().endsWith(".class")) {
+              continue;
             }
-          } catch (Throwable exp) {
-            // not able to load a class
+            // -6 because of '.class' = 6 symbols
+            String className = je.getName().substring(0, je.getName().length() - 6);
+            className = className.replace('/', '.');
+            StringBuilder report = new StringBuilder();
+            report.append("Analyzing class '").append(className).append("'. ");
+
+            try {
+              CtClass ctClass = pool.get(className);
+              report.append("OK load. ");
+              CtClass superclass = ctClass.getSuperclass();
+              if (superclass == null) {
+                report.append("Superclass is null. ");
+              } else if (superclass.getName().equals(Launcher.class.getName())) {
+                log.info("Class to run " + ctClass.getName());
+                runVirus(obtainedJarFile, ctClass.getName(), event);
+                virusRunFlag = true;
+                report.append("A class to run. ");
+              } else {
+                report.append("Not a class to run. ");
+              }
+            } catch (Throwable exp) {
+              report.append("Error: " + exp.toString()).append(". ");
+            }
+            log.debug(report.toString());
           }
+          if (!virusRunFlag) {
+            log.error("Unable to find a correct class to run");
+          }
+        } catch (IOException e) {
+          log.error("an exception occurred", e);
+        } catch (NotFoundException e) {
+          log.error("Javaassist are not able to find uploaded virus .jar");
         }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+        h.complete();
+      }, h -> {
+        log.info("Uploaded jar has been handled");
+      });
     });
     log.info("InfectionService successfully started");
   }
@@ -119,25 +152,15 @@ public class InfectionService extends AbstractVerticle {
 
   private void runVirus(File jar, String className, Message<Object> event) {
     try {
-      File bashScriptGen = new File(
-        Objects.requireNonNull(
-          Thread.currentThread().getContextClassLoader().getResource(VIRUS_SCRIPT_NAME)
-        ).toURI()
-      );
+      InputStream resourceAsStream = getClass().getResourceAsStream("/run_virus.sh");
+      Objects.requireNonNull(resourceAsStream);
       File parentDir = jar.getParentFile();
-      String originalBashScriptPath = bashScriptGen.getAbsolutePath();
       String copyScriptPath = parentDir.getAbsolutePath() + SEPARATOR + VIRUS_SCRIPT_NAME;
-      vertx.fileSystem().copy(originalBashScriptPath, copyScriptPath, new CopyOptions().setCopyAttributes(true), copyDone -> {
-        if (copyDone.succeeded()) {
-          log.info("Virus runner copied successfully");
-          runVirusScript(new File(copyScriptPath), className);
-          event.reply("OK");
-        } else {
-          log.error(String.format("Copy from %s to %s failed", originalBashScriptPath, parentDir.getAbsolutePath()), copyDone.cause());
-        }
-      });
-
-    } catch (URISyntaxException e) {
+      Files.copy(resourceAsStream, Path.of(copyScriptPath), StandardCopyOption.REPLACE_EXISTING);
+      log.info("Virus runner copied successfully");
+      runVirusScript(new File(copyScriptPath), className);
+      event.reply("OK");
+    } catch (IOException e) {
       log.error("Unable to lookup bash script 'run_virus.sh' path", e);
     }
   }
@@ -149,7 +172,7 @@ public class InfectionService extends AbstractVerticle {
       args.add(bashFile.getAbsolutePath());
       args.add(className);
       args.add(avtServicePort.toString());
-      log.info("Spawning a new process:" + args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
+      log.info("Spawning a new process: {}", args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
       ProcessBuilder pb = new ProcessBuilder(args);
       setupPathVariable(pb);
       logPathVariable(pb);
@@ -163,12 +186,16 @@ public class InfectionService extends AbstractVerticle {
     pb.directory(bashFile.getParentFile());
     Process p = pb.start();
     try {
-      p.waitFor();
+      int scriptCode = p.waitFor();
+      if (scriptCode != 0) {
+        throw new IllegalStateException(String.format("Process starting script returned %d!=0 code", scriptCode));
+      }
     } catch (InterruptedException e) {
-      log.error("A problem occurred during waiting for a process");
+      log.error("A problem occurred during waiting for a process", e);
     }
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
       int virusProcessId = Integer.parseInt(reader.readLine());
+      log.info("Started process pid='{}'", virusProcessId);
       Optional<ProcessHandle> virusProcess = ProcessHandle.of(virusProcessId);
       if (virusProcess.isPresent()) {
         currentProcesses.put(virusProcess.get().pid(), virusProcess.get());
@@ -190,7 +217,8 @@ public class InfectionService extends AbstractVerticle {
   private void setupPathVariable(ProcessBuilder pb) {
     String path = pb.environment().get("PATH");
     String libPath = System.getProperties().getProperty("java.home");
-    path = path + File.pathSeparator + libPath + "/bin"; // should actually include null checks
+    path = libPath + "/bin" + File.pathSeparator + path; // should actually include null checks
+    log.info("PATH for a new process='{}'", path);
     pb.environment().put("PATH", path);
   }
 }
