@@ -33,7 +33,9 @@ public class GossipClientImpl implements GossipClient {
     var jsonToSend = new JsonArray();
     info.stream().map(InfectedHost::toString).forEach(jsonToSend::add);
     var result = Future.<Set<InfectedHost>>future();
-    webClient.postAbs(String.format("http://%s:%d/gossip", hostToGossipWith.getHostWithEnv().getHost(), hostToGossipWith.topologyServicePort()))
+    String gossipUrl = String.format("http://%s:%d/gossip", hostToGossipWith.getHostWithEnv().getHost(), hostToGossipWith.topologyServicePort());
+    log.info("Gossiping with '{}'", gossipUrl);
+    webClient.postAbs(gossipUrl)
       .sendJson(jsonToSend, event -> {
         if (event.succeeded()) {
           Set<InfectedHost> collected = event.result()

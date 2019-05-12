@@ -17,6 +17,7 @@
 
 package io.github.avt.env.daemon;
 
+import io.github.avt.env.spreading.InfectedHost;
 import io.github.avt.env.util.Utils;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -45,7 +46,7 @@ public class AVTService extends AbstractVerticle {
 
   private final ReactivePort reactivePort = new ReactivePort();
   private final Integer avtServicePort;
-  private final AtomicInteger virusTopologyServicePort = new AtomicInteger(0);
+  private final AtomicInteger virusTopologyServicePort = new AtomicInteger(InfectedHost.NOT_INFECTED);
 
   public AVTService() {
     this(DEFAULT_PORT);

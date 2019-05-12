@@ -52,7 +52,6 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   private final Vertx vertx;
   private final InfectionClient infectionClient;
   private final GossipClient gossipClient;
-  private final NetClient netClient;
   private final String networkHost;
   private volatile int envPort;
   private volatile ListOfPeers listOfPeers;
@@ -61,7 +60,6 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
 
   public PeerToPeerNetworkTopology(int topologyServicePort, Network network) {
     this.vertx = Vertx.vertx();
-    this.netClient = vertx.createNetClient();
     this.webClient = WebClient.create(vertx);
     this.infectionClient = new InfectionClientImpl(vertx);
     this.topologyServicePort = topologyServicePort;
@@ -175,7 +173,7 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   private void updatePeers(Set<InfectedHost> updates) {
     updates.forEach(update -> {
       boolean isNew = listOfPeers.addPeer(update);
-      if (isNew) {
+      if (isNew && update.topologyServicePort() != InfectedHost.NOT_INFECTED) {
         log.info("New peer discovered: " + update);
       }
     });

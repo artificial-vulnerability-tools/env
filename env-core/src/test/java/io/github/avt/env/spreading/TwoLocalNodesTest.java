@@ -60,7 +60,7 @@ public class TwoLocalNodesTest {
       Commons.TEST_FILE_WITH_VIRUS)
       .setHandler(event -> {
         if (event.succeeded()) {
-          InfectedHost infectedHost = new InfectedHost(new HostWithEnvironment(Commons.LOCALHOST, SECOND_ENV_NODE_PORT), Utils.pickRandomFreePort());
+          InfectedHost infectedHost = new InfectedHost(new HostWithEnvironment(Commons.LOCALHOST, SECOND_ENV_NODE_PORT), InfectedHost.NOT_INFECTED);
           log.info("Forcing " + event.result() + " to infect " + SECOND_HOST_WITH_ENV);
           gossipClient.gossipWith(event.result(), Set.of(infectedHost));
           oneNodeInfected.countDown();
@@ -70,6 +70,7 @@ public class TwoLocalNodesTest {
       });
     oneNodeInfected.await(10_000);
     log.info("One of the nodes has been infected");
+//    Thread.sleep(10000);
     Async undeployed = testContext.async(2);
     vertx.setPeriodic(500, timerId -> {
       infectionClient.topologyServicePort(SECOND_HOST_WITH_ENV).setHandler(event -> {
