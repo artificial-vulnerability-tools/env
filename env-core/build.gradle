@@ -24,7 +24,7 @@ dependencies {
 
   // byte code engineering
   compile group: 'org.javassist', name: 'javassist', version: '3.25.0-GA'
-  
+
   // Vert.X dependencies
   compile group: 'io.vertx', name: 'vertx-core', version: vertx_version
   compile group: 'io.vertx', name: 'vertx-web', version: vertx_version
