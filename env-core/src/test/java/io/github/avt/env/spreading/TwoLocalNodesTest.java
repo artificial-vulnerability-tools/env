@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -35,6 +36,8 @@ public class TwoLocalNodesTest {
 
   @Test
   public void infectionShouldSpread(TestContext testContext) throws IOException, InterruptedException {
+    testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
+    log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     var env1 = new AVTService(FIRST_ENV_NODE_PORT);
     var env2 = new AVTService(SECOND_ENV_NODE_PORT);

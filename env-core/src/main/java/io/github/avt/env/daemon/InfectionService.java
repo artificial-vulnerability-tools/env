@@ -154,7 +154,7 @@ public class InfectionService extends AbstractVerticle {
       args.add(bashFile.getAbsolutePath());
       args.add(className);
       args.add(avtServicePort.toString());
-      log.info("Spawning a new process:" + args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
+      log.info("Spawning a new process: {}", args.stream().reduce("", (s1, s2) -> s1 + " " + s2));
       ProcessBuilder pb = new ProcessBuilder(args);
       setupPathVariable(pb);
       logPathVariable(pb);
@@ -168,12 +168,16 @@ public class InfectionService extends AbstractVerticle {
     pb.directory(bashFile.getParentFile());
     Process p = pb.start();
     try {
-      p.waitFor();
+      int scriptCode = p.waitFor();
+      if (scriptCode != 0) {
+        throw new IllegalStateException(String.format("Process starting script returned %d!=0 code", scriptCode));
+      }
     } catch (InterruptedException e) {
-      log.error("A problem occurred during waiting for a process");
+      log.error("A problem occurred during waiting for a process", e);
     }
     try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
       int virusProcessId = Integer.parseInt(reader.readLine());
+      log.info("Started process pid='{}'", virusProcessId);
       Optional<ProcessHandle> virusProcess = ProcessHandle.of(virusProcessId);
       if (virusProcess.isPresent()) {
         currentProcesses.put(virusProcess.get().pid(), virusProcess.get());
@@ -195,7 +199,8 @@ public class InfectionService extends AbstractVerticle {
   private void setupPathVariable(ProcessBuilder pb) {
     String path = pb.environment().get("PATH");
     String libPath = System.getProperties().getProperty("java.home");
-    path = path + File.pathSeparator + libPath + "/bin"; // should actually include null checks
+    path = libPath + "/bin" + File.pathSeparator + path; // should actually include null checks
+    log.info("PATH for a new process='{}'", path);
     pb.environment().put("PATH", path);
   }
 }

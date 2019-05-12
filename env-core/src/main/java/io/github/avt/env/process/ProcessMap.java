@@ -34,8 +34,8 @@ public class ProcessMap extends ConcurrentHashMap<Long, ProcessHandle> {
   public ProcessHandle put(Long key, ProcessHandle value) {
     ProcessHandle put = super.put(key, value);
     CompletableFuture<ProcessHandle> processHandleCompletableFuture = value.onExit();
-    processHandleCompletableFuture.thenRun(() -> {
-      log.info("process " + key + " exit");
+    processHandleCompletableFuture.thenAccept(handle -> {
+      log.info("process pid='{}' exit", key);
       remove(key);
     });
     return put;
