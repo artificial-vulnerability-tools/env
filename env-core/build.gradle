@@ -49,12 +49,6 @@ task packageTests(type: Jar) {
   version = null
 }
 
-task cleanBinDirs {
-  def binDir = new File('.avtenv')
-  def binDir2 = new File('env-core/.avtenv')
-  binDir.deleteDir()
-  binDir2.deleteDir()
-}
 
 task sourcesJar(type: Jar) {
   classifier "sources"
@@ -68,7 +62,6 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 // Task dependencies
 tasks.test.dependsOn(packageTests)
-tasks.clean.dependsOn(cleanBinDirs)
 
 publishing {
   publications {
@@ -109,18 +102,25 @@ publishing {
       }
     }
   }
-//  repositories {
-//    maven {
-//      // change URLs to point to your repos, e.g. http://my.org/repo
-//      def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-//      def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-//      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-//      credentials {
-//        username sonatypeUsername
-//        password sonatypePassword
-//      }
-//    }
-//  }
+
+  if (!project.hasProperty("sonatypeUsername")) {
+    ext.sonatypeUsername = "RandomUsername"
+  }
+  if (!project.hasProperty("sonatypePassword")) {
+    ext.sonatypePassword = "RandomPassword"
+  }
+  repositories {
+    maven {
+      // change URLs to point to your repos, e.g. http://my.org/repo
+      def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+      def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+      url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+      credentials {
+        username sonatypeUsername
+        password sonatypePassword
+      }
+    }
+  }
 }
 
 signing {
