@@ -52,6 +52,14 @@ task packageTests(type: Jar) {
   version = null
 }
 
+task printLogs() {
+  println 'printing log files:'
+  def tree = fileTree(dir: '.avtenv', include: '**/*.txt')
+  tree.each { File file ->
+    println file.getAbsolutePath() + ":"
+    println file.getText()
+  }
+}
 
 task sourcesJar(type: Jar) {
   classifier "sources"
