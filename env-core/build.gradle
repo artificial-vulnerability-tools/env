@@ -53,11 +53,13 @@ task packageTests(type: Jar) {
 }
 
 task printLogs() {
-  println 'printing log files:'
-  def tree = fileTree(dir: '.avtenv', include: '**/*.txt')
-  tree.each { File file ->
-    println file.getAbsolutePath() + ":"
-    println file.getText()
+  doLast {
+    println 'printing log files:'
+    def tree = fileTree(dir: '.avtenv', include: '**/*.txt')
+    tree.each { File file ->
+      println file.getAbsolutePath() + ":"
+      println file.getText()
+    }
   }
 }
 
