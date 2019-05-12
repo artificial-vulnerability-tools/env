@@ -27,7 +27,7 @@ public class ListOfPeers implements TopologyInformation {
 
   public synchronized boolean addPeer(InfectedHost peer) {
     boolean add = peers.add(peer);
-    if (add && addHandler != null) {
+    if (add && addHandler != null && !peer.equals(thisPeer)) {
       vertx.getOrCreateContext().runOnContext(event -> {
         addHandler.handle(peer);
       });
