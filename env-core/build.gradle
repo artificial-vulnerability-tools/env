@@ -76,6 +76,14 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 // Task dependencies
 tasks.test.dependsOn(packageTests)
 
+ext.sonnatypeDefined = project.hasProperty("sonatypeUsername")
+if (!project.hasProperty("sonatypeUsername")) {
+  ext.sonatypeUsername = "RandomUsername"
+}
+if (!project.hasProperty("sonatypePassword")) {
+  ext.sonatypePassword = "RandomPassword"
+}
+
 publishing {
   publications {
     mavenJava(MavenPublication) {
@@ -115,13 +123,6 @@ publishing {
       }
     }
   }
-
-  if (!project.hasProperty("sonatypeUsername")) {
-    ext.sonatypeUsername = "RandomUsername"
-  }
-  if (!project.hasProperty("sonatypePassword")) {
-    ext.sonatypePassword = "RandomPassword"
-  }
   repositories {
     maven {
       // change URLs to point to your repos, e.g. http://my.org/repo
@@ -133,5 +134,11 @@ publishing {
         password sonatypePassword
       }
     }
+  }
+}
+
+if (sonnatypeDefined) {
+  signing {
+    sign publishing.publications.mavenJava
   }
 }
