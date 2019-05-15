@@ -38,4 +38,6 @@ subprojects {
   task cleanBinDirs {
     file('.avtenv').deleteDir()
   }
+
+  task cbd(dependsOn: cleanBinDirs) {}
 }

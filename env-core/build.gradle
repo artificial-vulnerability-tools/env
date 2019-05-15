@@ -52,6 +52,9 @@ task packageTests(type: Jar) {
   version = null
 }
 
+// alias for packageTests
+task pt(dependsOn: packageTests) {}
+
 task printLogs() {
   doLast {
     println 'printing log files:'
