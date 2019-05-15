@@ -13,7 +13,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,7 +32,7 @@ public class TwoLocalNodesTest {
   private final HostWithEnvironment SECOND_HOST_WITH_ENV = new HostWithEnvironment(Commons.LOCALHOST, SECOND_ENV_NODE_PORT);
 
   @Test
-  public void infectionShouldSpread(TestContext testContext) throws IOException, InterruptedException {
+  public void infectionShouldSpread(TestContext testContext) {
     testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
     log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
