@@ -24,6 +24,7 @@ import io.github.avt.env.spreading.Topology;
 import io.github.avt.env.spreading.TopologyInformation;
 import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +43,7 @@ public class TestLauncher extends Launcher {
 
   @Override
   public synchronized void launch(int envPort) {
-    Vertx.vertx().fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
+    Vertx.vertx(new VertxOptions().setEventLoopPoolSize(1)).fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
     TopologyInformation topologyInformation = topology.topologyInformation();
     ListOfPeers peers = (ListOfPeers) topologyInformation;
     Objects.requireNonNull(peers);

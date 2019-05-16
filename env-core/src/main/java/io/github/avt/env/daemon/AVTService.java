@@ -35,14 +35,15 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Artificial vulnerability services. Aimed to expose an endpoint for a virus.
  */
 public class AVTService extends AbstractVerticle {
 
+  private final Logger log;
   public static final int DEFAULT_PORT = 2222;
   public static final String AVT_HOME_DIR = ".avtenv";
   public static final String NAME_OF_JAR_WITH_VIRUS = "virus.jar";
@@ -51,13 +52,11 @@ public class AVTService extends AbstractVerticle {
   public static final String TOPOLOGY_SERVICE_PORT = "topology_service_port";
   public static final String SEPARATOR = System.getProperty("file.separator");
 
-  private final Logger log;
-
   private final Integer avtServicePort;
   private final AtomicReference<Optional<Virus>> currentVirus = new AtomicReference<>(Optional.empty());
   private final ReactivePort reactivePort = new ReactivePort();
-  private final ReentrantLock infectionLock = new ReentrantLock();
-  private final InfectionHelper infectionHelper;
+  private final AtomicBoolean canAcceptRequests = new AtomicBoolean(true);
+  private InfectionHelper infectionHelper;
 
   public AVTService() {
     this(DEFAULT_PORT);
@@ -65,8 +64,11 @@ public class AVTService extends AbstractVerticle {
 
   public AVTService(Integer port) {
     avtServicePort = port;
-    log = LoggerFactory.getLogger(AVTService.class + ":" + avtServicePort);
-    infectionHelper = new InfectionHelper(avtServicePort);
+    log = LoggerFactory.getLogger(String.format("%s:%s", AVTService.class.getName(), avtServicePort));
+  }
+
+  public int envPort() {
+    return avtServicePort;
   }
 
   @Override
@@ -78,7 +80,7 @@ public class AVTService extends AbstractVerticle {
       if (currentVirus.get().isPresent()) {
         final String msg = "Attempt to infect had been rejected. Reason: there is a currently running virus";
         responseWithError(routingContext, msg);
-      } else if (infectionLock.tryLock()) {
+      } else if (canAcceptRequests.compareAndSet(true, false)) {
         routingContext.request().bodyHandler(body -> {
           log.info("Virus has been uploaded");
           var dirName = dirName();
@@ -102,17 +104,18 @@ public class AVTService extends AbstractVerticle {
                       final Virus virus = new Virus(event.result(), obtainedJarFile, port);
                       currentVirus.set(Optional.of(virus));
                       routingContext.response().end(Utils.virusPortJson(port).toBuffer());
-                      infectionLock.unlock();
+                      log.info("infected, unlocking the infection lock");
+                      canAcceptRequests.compareAndSet(false, true);
                     });
                   } else {
                     log.error("failed to start a process", event.cause());
-                    infectionLock.unlock();
+                    canAcceptRequests.compareAndSet(false, true);
                   }
                 });
               });
             } else {
               log.error("Unable to create a directory for a virus", dirCreation.cause());
-              infectionLock.unlock();
+              canAcceptRequests.compareAndSet(false, true);
             }
           });
         });
@@ -140,7 +143,7 @@ public class AVTService extends AbstractVerticle {
       } else {
         log.info(AVT_HOME_DIR + " already exists");
       }
-
+      infectionHelper = new InfectionHelper(avtServicePort);
       Future<HttpServer> listenFuture = Future.future();
       server.requestHandler(router).listen(avtServicePort, listenFuture);
       listenFuture.setHandler(event -> {
@@ -155,25 +158,9 @@ public class AVTService extends AbstractVerticle {
     });
   }
 
-  @Override
-  public void stop() {
-    if (currentVirus.get().isPresent()) {
-      final Virus virus = currentVirus.get().get();
-      final long pid = virus.getProcess().pid();
-      final boolean destroy = virus.getProcess().destroy();
-      if (destroy) {
-        log.info("A virus process with pid='{}' has been destroyed", pid);
-      } else {
-        log.error("Unable to destroy a virus process with pid='{}'", pid);
-      }
-    }
-  }
-
   private void responseWithError(RoutingContext routingContext, String msg) {
-    routingContext.response().setStatusCode(HttpResponseStatus.CONFLICT.code()).end(
-      Buffer.buffer(new JsonObject().put("error", msg).encodePrettily().getBytes(StandardCharsets.UTF_8))
-    );
-    log.info(msg);
+    routingContext.response().setStatusCode(HttpResponseStatus.CONFLICT.code())
+      .end(Buffer.buffer(new JsonObject().put("error", msg).encodePrettily().getBytes(StandardCharsets.UTF_8)));
   }
 
   private String dirName() {

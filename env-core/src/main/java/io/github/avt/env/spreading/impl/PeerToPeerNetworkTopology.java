@@ -18,18 +18,22 @@
 package io.github.avt.env.spreading.impl;
 
 import io.github.avt.env.daemon.AVTService;
-import io.github.avt.env.spreading.*;
+import io.github.avt.env.spreading.GossipClient;
+import io.github.avt.env.spreading.HostWithEnvironment;
+import io.github.avt.env.spreading.InfectedHost;
+import io.github.avt.env.spreading.InfectionClient;
+import io.github.avt.env.spreading.ListOfPeers;
+import io.github.avt.env.spreading.Network;
+import io.github.avt.env.spreading.Topology;
 import io.github.avt.env.util.Utils;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.net.NetClient;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
@@ -46,7 +50,7 @@ import java.util.stream.Collectors;
 public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
 
   public final Logger log;
-  public static final Integer DELAY = 1000;
+  public static final Integer DELAY = 100;
   private final WebClient webClient;
   public final Integer topologyServicePort;
   private final Vertx vertx;

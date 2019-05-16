@@ -59,6 +59,7 @@ public class InfectionClientImpl implements InfectionClient {
   @Override
   public Future<InfectedHost> infect(HostWithEnvironment hostWithEnvironment, File artifactWithVirus) {
     Future<InfectedHost> result = Future.future();
+    log.info("Infecting '{}'", hostWithEnvironment);
     vertx.fileSystem().open(artifactWithVirus.getAbsolutePath(), new OpenOptions(), fileRes -> {
       if (fileRes.succeeded()) {
         ReadStream<Buffer> fileStream = fileRes.result();
