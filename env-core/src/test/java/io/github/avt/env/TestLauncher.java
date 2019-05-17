@@ -18,11 +18,11 @@
 package io.github.avt.env;
 
 import io.github.avt.env.extend.Launcher;
-import io.github.avt.env.spreading.ListOfPeers;
-import io.github.avt.env.spreading.Network;
 import io.github.avt.env.spreading.Topology;
 import io.github.avt.env.spreading.TopologyInformation;
-import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
+import io.github.avt.env.spreading.meta.Network;
+import io.github.avt.env.spreading.topology.p2p.ListOfPeers;
+import io.github.avt.env.spreading.topology.p2p.PeerToPeerNetworkTopology;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import org.slf4j.Logger;

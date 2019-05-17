@@ -1,7 +1,7 @@
 package io.github.avt.env.spreading.impl;
 
 import io.github.avt.env.spreading.GossipClient;
-import io.github.avt.env.spreading.InfectedHost;
+import io.github.avt.env.spreading.meta.InfectedHost;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;

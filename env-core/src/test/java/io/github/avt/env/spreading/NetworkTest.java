@@ -1,5 +1,6 @@
 package io.github.avt.env.spreading;
 
+import io.github.avt.env.spreading.meta.Network;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;

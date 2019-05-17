@@ -1,5 +1,6 @@
-package io.github.avt.env.spreading;
+package io.github.avt.env.spreading.meta;
 
+import io.github.avt.env.spreading.HasVertxSocketAddress;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.net.impl.SocketAddressImpl;
 

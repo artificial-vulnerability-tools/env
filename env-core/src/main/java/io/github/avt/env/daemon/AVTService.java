@@ -17,7 +17,7 @@
 
 package io.github.avt.env.daemon;
 
-import io.github.avt.env.spreading.InfectedHost;
+import io.github.avt.env.spreading.meta.InfectedHost;
 import io.github.avt.env.util.Utils;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;

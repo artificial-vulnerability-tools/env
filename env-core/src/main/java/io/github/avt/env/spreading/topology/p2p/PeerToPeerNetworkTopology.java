@@ -15,16 +15,17 @@
  * limitations under the License.
  */
 
-package io.github.avt.env.spreading.impl;
+package io.github.avt.env.spreading.topology.p2p;
 
 import io.github.avt.env.daemon.AVTService;
 import io.github.avt.env.spreading.GossipClient;
-import io.github.avt.env.spreading.HostWithEnvironment;
-import io.github.avt.env.spreading.InfectedHost;
 import io.github.avt.env.spreading.InfectionClient;
-import io.github.avt.env.spreading.ListOfPeers;
-import io.github.avt.env.spreading.Network;
 import io.github.avt.env.spreading.Topology;
+import io.github.avt.env.spreading.impl.GossipClientImpl;
+import io.github.avt.env.spreading.impl.InfectionClientImpl;
+import io.github.avt.env.spreading.meta.HostWithEnvironment;
+import io.github.avt.env.spreading.meta.InfectedHost;
+import io.github.avt.env.spreading.meta.Network;
 import io.github.avt.env.util.Utils;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -50,22 +51,22 @@ import java.util.stream.Collectors;
 public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
 
   public final Logger log;
-  public static final Integer DEFAULT_DELAY = 1000;
+  public static final Integer DEFAULT_GOSSIP_PERIOD_MS = 1000;
   private final WebClient webClient;
   public final Integer topologyServicePort;
-  private final Vertx vertx;
+  private final Vertx vertx = Vertx.vertx();
   private final InfectionClient infectionClient;
   private final GossipClient gossipClient;
   private final String networkHost;
   private volatile int envPort;
   private volatile ListOfPeers listOfPeers;
-  private final Integer delay;
+  private final Integer gossipPeriodMs;
+  Router router = Router.router(vertx);
 
   private Random rnd = new Random();
 
-  public PeerToPeerNetworkTopology(int topologyServicePort, Network network, Integer delay) {
-    this.delay = delay;
-    this.vertx = Vertx.vertx();
+  public PeerToPeerNetworkTopology(int topologyServicePort, Network network, Integer gossipPeriodMs) {
+    this.gossipPeriodMs = gossipPeriodMs;
     this.webClient = WebClient.create(vertx);
     this.infectionClient = new InfectionClientImpl(vertx);
     this.topologyServicePort = topologyServicePort;
@@ -75,7 +76,7 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   }
 
   public PeerToPeerNetworkTopology(Network network) {
-    this(Utils.pickRandomFreePort(), network, DEFAULT_DELAY);
+    this(Utils.pickRandomFreePort(), network, DEFAULT_GOSSIP_PERIOD_MS);
   }
 
   @Override
@@ -115,7 +116,7 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   }
 
   private void runActiveServiceTimer() {
-    vertx.setTimer(delay, id -> {
+    vertx.setTimer(gossipPeriodMs, id -> {
       log.info("Time to gossip with someone");
       gossipWithSomeOne().setHandler(result -> {
         log.info("One session of gossip has been ended");
@@ -202,7 +203,6 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
 
   private void startGossipPassiveService() {
     var httpServer = vertx.createHttpServer();
-    var router = Router.router(vertx);
     router.post("/gossip").handler(ctx -> {
       ctx.request().bodyHandler(body -> {
         var responsePeers = listOfPeers.fullPeerList();

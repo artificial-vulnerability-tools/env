@@ -1,5 +1,7 @@
-package io.github.avt.env.spreading;
+package io.github.avt.env.spreading.topology.p2p;
 
+import io.github.avt.env.spreading.TopologyInformation;
+import io.github.avt.env.spreading.meta.InfectedHost;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
@@ -10,7 +12,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.github.avt.env.spreading.InfectedHost.NOT_INFECTED;
+import static io.github.avt.env.spreading.meta.InfectedHost.NOT_INFECTED;
 
 public class ListOfPeers implements TopologyInformation {
 

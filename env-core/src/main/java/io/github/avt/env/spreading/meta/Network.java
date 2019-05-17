@@ -1,4 +1,4 @@
-package io.github.avt.env.spreading;
+package io.github.avt.env.spreading.meta;
 
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;

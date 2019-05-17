@@ -1,9 +1,9 @@
 package io.github.avt.env.spreading.impl;
 
 import io.github.avt.env.daemon.AVTService;
-import io.github.avt.env.spreading.HostWithEnvironment;
-import io.github.avt.env.spreading.InfectedHost;
 import io.github.avt.env.spreading.InfectionClient;
+import io.github.avt.env.spreading.meta.HostWithEnvironment;
+import io.github.avt.env.spreading.meta.InfectedHost;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;

@@ -17,9 +17,9 @@
 
 package io.github.avt.env.extend;
 
-import io.github.avt.env.spreading.Network;
 import io.github.avt.env.spreading.Topology;
-import io.github.avt.env.spreading.impl.PeerToPeerNetworkTopology;
+import io.github.avt.env.spreading.meta.Network;
+import io.github.avt.env.spreading.topology.p2p.PeerToPeerNetworkTopology;
 
 /**
  * A base class for extending. Should be used by any virus.

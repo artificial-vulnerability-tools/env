@@ -1,5 +1,6 @@
 package io.github.avt.env.spreading;
 
+import io.github.avt.env.spreading.meta.InfectedHost;
 import io.vertx.core.Future;
 
 import java.util.Set;
