@@ -31,14 +31,12 @@ public class HugeAmountOfNodesSpreading {
   public final InfectionClient infectionClient = new InfectionClientImpl(vertx);
   public final GossipClient gossipClient = new GossipClientImpl(vertx);
 
-  @Test(timeout = 60 * 1000 * 20 )
+  @Test(timeout = 60 * 1000 * 20)
   public void test100Nodes(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
     final int amountOfNodes = 10;
     log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
-    long periodic = checkAmountOfVirusesNoMoreThan(amountOfNodes, testContext);
     runP2PNetworkTest(amountOfNodes, testContext);
-    vertx.cancelTimer(periodic);
   }
 
   void runP2PNetworkTest(int amountOfNodes, TestContext testContext) throws InterruptedException {
@@ -76,6 +74,7 @@ public class HugeAmountOfNodesSpreading {
     final Async allVirusesAreRunning = testContext.async(5);
     vertx.setPeriodic(1000, event -> {
       final int virusProcesses = jpsGrepAwkWC(testContext);
+      log.info("Current amount of virus processes='{}'", virusProcesses);
       if (virusProcesses == amountOfNodes) {
         allVirusesAreRunning.countDown();
         if (allVirusesAreRunning.count() == 0) {
@@ -109,15 +108,5 @@ public class HugeAmountOfNodesSpreading {
       testContext.fail(e);
       return 0;
     }
-  }
-
-  private long checkAmountOfVirusesNoMoreThan(int count, TestContext context) {
-    return vertx.setPeriodic(1000, event -> {
-      final int amountOfProcesses = jpsGrepAwkWC(context);
-      log.info("Current amount of virus processes='{}'", amountOfProcesses);
-      if (amountOfProcesses > count) {
-        context.fail(String.format("Amount of virus processes'%d' more than expected '%d'", amountOfProcesses, count));
-      }
-    });
   }
 }
