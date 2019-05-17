@@ -177,6 +177,10 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
     return gossipDone;
   }
 
+  public Router router() {
+    return router;
+  }
+
   private void updatePeers(Set<InfectedHost> updates) {
     updates.forEach(update -> {
       boolean isNew = listOfPeers.addPeer(update);
