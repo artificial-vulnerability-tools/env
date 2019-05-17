@@ -101,7 +101,7 @@ public class HugeAmountOfNodesSpreading {
       String[] cmd = {"/bin/bash", "-c", command};
       p = Runtime.getRuntime().exec(cmd);
       p.waitFor();
-      final int parseInt = Integer.parseInt(new BufferedReader(new InputStreamReader(p.getInputStream())).readLine());
+      final int parseInt = Integer.parseInt(new BufferedReader(new InputStreamReader(p.getInputStream())).readLine().replaceAll("\\s+",""));
       p.destroy();
       return parseInt;
     } catch (Exception e) {
