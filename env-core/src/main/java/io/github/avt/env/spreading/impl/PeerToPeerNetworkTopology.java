@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
 public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
 
   public final Logger log;
-  public static final Integer DELAY = 100;
+  public static final Integer DEFAULT_DELAY = 1000;
   private final WebClient webClient;
   public final Integer topologyServicePort;
   private final Vertx vertx;
@@ -59,10 +59,12 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   private final String networkHost;
   private volatile int envPort;
   private volatile ListOfPeers listOfPeers;
+  private final Integer delay;
 
   private Random rnd = new Random();
 
-  public PeerToPeerNetworkTopology(int topologyServicePort, Network network) {
+  public PeerToPeerNetworkTopology(int topologyServicePort, Network network, Integer delay) {
+    this.delay = delay;
     this.vertx = Vertx.vertx();
     this.webClient = WebClient.create(vertx);
     this.infectionClient = new InfectionClientImpl(vertx);
@@ -73,7 +75,7 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   }
 
   public PeerToPeerNetworkTopology(Network network) {
-    this(Utils.pickRandomFreePort(), network);
+    this(Utils.pickRandomFreePort(), network, DEFAULT_DELAY);
   }
 
   @Override
@@ -113,7 +115,7 @@ public class PeerToPeerNetworkTopology implements Topology<ListOfPeers> {
   }
 
   private void runActiveServiceTimer() {
-    vertx.setTimer(DELAY, id -> {
+    vertx.setTimer(delay, id -> {
       log.info("Time to gossip with someone");
       gossipWithSomeOne().setHandler(result -> {
         log.info("One session of gossip has been ended");
