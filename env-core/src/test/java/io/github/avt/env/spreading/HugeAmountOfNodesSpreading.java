@@ -36,8 +36,9 @@ public class HugeAmountOfNodesSpreading {
     testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
     final int amountOfNodes = 10;
     log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
-    checkAmountOfVirusesNoMoreThan(amountOfNodes, testContext);
+    long periodic = checkAmountOfVirusesNoMoreThan(amountOfNodes, testContext);
     runP2PNetworkTest(amountOfNodes, testContext);
+    vertx.cancelTimer(periodic);
   }
 
   void runP2PNetworkTest(int amountOfNodes, TestContext testContext) throws InterruptedException {
@@ -110,12 +111,12 @@ public class HugeAmountOfNodesSpreading {
     }
   }
 
-  private void checkAmountOfVirusesNoMoreThan(int count, TestContext context) {
-    vertx.setPeriodic(1000, event -> {
+  private long checkAmountOfVirusesNoMoreThan(int count, TestContext context) {
+    return vertx.setPeriodic(1000, event -> {
       final int amountOfProcesses = jpsGrepAwkWC(context);
       log.info("Current amount of virus processes='{}'", amountOfProcesses);
       if (amountOfProcesses > count) {
-        context.fail(String.format("Amount of virus processes'%d' more than expected '%d'", amountOfProcesses));
+        context.fail(String.format("Amount of virus processes'%d' more than expected '%d'", amountOfProcesses, count));
       }
     });
   }
