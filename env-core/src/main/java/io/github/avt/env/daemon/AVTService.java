@@ -158,6 +158,16 @@ public class AVTService extends AbstractVerticle {
     });
   }
 
+  @Override
+  public void stop() {
+    Optional<Virus> virus = currentVirus.get();
+    virus.ifPresent(value -> {
+      ProcessHandle process = value.getProcess();
+      process.destroy();
+      log.info("Process with pid='{}' has been destroyed", process.pid());
+    });
+  }
+
   private void responseWithError(RoutingContext routingContext, String msg) {
     routingContext.response().setStatusCode(HttpResponseStatus.CONFLICT.code())
       .end(Buffer.buffer(new JsonObject().put("error", msg).encodePrettily().getBytes(StandardCharsets.UTF_8)));
