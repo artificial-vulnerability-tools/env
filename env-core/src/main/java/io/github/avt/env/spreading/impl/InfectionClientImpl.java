@@ -8,12 +8,15 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.OpenOptions;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.streams.ReadStream;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.Optional;
 
 public class InfectionClientImpl implements InfectionClient {
@@ -67,7 +70,11 @@ public class InfectionClientImpl implements InfectionClient {
           .post(hostWithEnvironment.getEnvPort(), hostWithEnvironment.getHost(), AVTService.INFECT_PATH)
           .sendStream(fileStream, ar -> {
             if (ar.succeeded()) {
-              result.complete(new InfectedHost(hostWithEnvironment, ar.result().bodyAsJsonObject().getInteger(AVTService.TOPOLOGY_SERVICE_PORT)));
+              HttpResponse<Buffer> response = ar.result();
+              Objects.requireNonNull(response);
+              JsonObject entries = response.bodyAsJsonObject();
+              Objects.requireNonNull(entries);
+              result.complete(new InfectedHost(hostWithEnvironment, entries.getInteger(AVTService.TOPOLOGY_SERVICE_PORT)));
             } else {
               result.fail(ar.cause());
             }

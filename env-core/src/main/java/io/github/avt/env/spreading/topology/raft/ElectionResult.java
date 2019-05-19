@@ -24,6 +24,6 @@ public class ElectionResult {
 
   @Override
   public String toString() {
-    return String.format("Election result: voted=%d total=%d", voted, total);
+    return String.format("Election result: %s [voted=%d total=%d]", isQuorum() ? "elected" : "not elected", voted(), total());
   }
 }

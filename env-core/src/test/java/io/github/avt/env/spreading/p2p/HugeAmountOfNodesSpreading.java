@@ -1,13 +1,11 @@
-package io.github.avt.env.spreading;
+package io.github.avt.env.spreading.p2p;
 
+import io.github.avt.env.Base;
 import io.github.avt.env.Commons;
 import io.github.avt.env.daemon.AVTService;
-import io.github.avt.env.spreading.impl.GossipClientImpl;
-import io.github.avt.env.spreading.impl.InfectionClientImpl;
 import io.github.avt.env.spreading.meta.HostWithEnvironment;
 import io.github.avt.env.spreading.meta.InfectedHost;
 import io.github.avt.env.util.Utils;
-import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -16,8 +14,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,12 +22,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @RunWith(VertxUnitRunner.class)
-public class HugeAmountOfNodesSpreading {
+public class HugeAmountOfNodesSpreading extends Base {
 
-  private final Vertx vertx = Vertx.vertx();
   public static final Logger log = LoggerFactory.getLogger(TwoLocalNodesTest.class);
-  public final InfectionClient infectionClient = new InfectionClientImpl(vertx);
-  public final GossipClient gossipClient = new GossipClientImpl(vertx);
 
   @Test(timeout = 60 * 1000 * 20)
   public void test100Nodes(TestContext testContext) throws InterruptedException {
@@ -73,6 +66,7 @@ public class HugeAmountOfNodesSpreading {
           testContext.fail("Unable to infect one of the nodes");
         }
       });
+    oneNodeInfected.await(30_000);
     final Async allVirusesAreRunning = testContext.async(5);
     vertx.setPeriodic(1000, event -> {
       final int virusProcesses = jpsGrepAwkWC(testContext);
@@ -85,30 +79,6 @@ public class HugeAmountOfNodesSpreading {
       }
     });
     allVirusesAreRunning.await();
-    oneNodeInfected.await(30_000);
     undeploy(amountOfNodes, testContext, idsToUndeploy);
-  }
-
-  private void undeploy(int amountOfNodes, TestContext testContext, List<String> idsToUndeploy) {
-    Async undeployed = testContext.async(amountOfNodes);
-    idsToUndeploy.forEach(id -> vertx.undeploy(id, done -> undeployed.countDown()));
-    undeployed.await(30_000);
-    log.info("Nodes had been undeployed");
-  }
-
-  private int jpsGrepAwkWC(TestContext testContext) {
-    Process p;
-    try {
-      final String command = String.format("%s/bin/jps | grep AVTVirus | awk '{print $1}' | wc -l", System.getProperties().getProperty("java.home"));
-      String[] cmd = {"/bin/bash", "-c", command};
-      p = Runtime.getRuntime().exec(cmd);
-      p.waitFor();
-      final int parseInt = Integer.parseInt(new BufferedReader(new InputStreamReader(p.getInputStream())).readLine().replaceAll("\\s+",""));
-      p.destroy();
-      return parseInt;
-    } catch (Exception e) {
-      testContext.fail(e);
-      return 0;
-    }
   }
 }

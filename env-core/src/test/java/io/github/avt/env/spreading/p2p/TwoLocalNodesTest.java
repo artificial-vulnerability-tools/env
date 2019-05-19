@@ -1,7 +1,9 @@
-package io.github.avt.env.spreading;
+package io.github.avt.env.spreading.p2p;
 
 import io.github.avt.env.Commons;
 import io.github.avt.env.daemon.AVTService;
+import io.github.avt.env.spreading.GossipClient;
+import io.github.avt.env.spreading.InfectionClient;
 import io.github.avt.env.spreading.impl.GossipClientImpl;
 import io.github.avt.env.spreading.impl.InfectionClientImpl;
 import io.github.avt.env.spreading.meta.HostWithEnvironment;
