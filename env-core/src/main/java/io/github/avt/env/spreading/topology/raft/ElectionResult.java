@@ -2,17 +2,16 @@ package io.github.avt.env.spreading.topology.raft;
 
 public class ElectionResult {
 
-  private final int voted;
-  private final int total;
+  private final Integer voted;
+  private final Integer total;
 
   public ElectionResult(int voted, int total) {
     this.voted = voted;
     this.total = total;
   }
 
-  @Override
-  public String toString() {
-    return String.format("Election result: voted=%d total=%d", voted, total);
+  public boolean isQuorum() {
+    return voted / total.doubleValue() > 0.5d;
   }
 
   public int voted() {
@@ -21,5 +20,10 @@ public class ElectionResult {
 
   public int total() {
     return total;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("Election result: voted=%d total=%d", voted, total);
   }
 }
