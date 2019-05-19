@@ -41,15 +41,32 @@ dependencies {
 
 // _______________________________
 // Custom tasks
-task packageTests(type: Jar) {
-  archiveBaseName = project.name + '-test-fat'
+task packageP2P(type: Jar) {
+  archiveBaseName = project.name + '-p2p-test-fat'
   from configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) }
   from sourceSets.test.output
   from sourceSets.main.output
   from 'src/main/resources/run_virus.sh'
+  exclude 'io/github/avt/env/RaftTestLauncher.class'
 
   // in order to omit version in resulted file name
   version = null
+}
+
+task packageRaft(type: Jar) {
+  archiveBaseName = project.name + '-raft-test-fat'
+  from configurations.testCompile.collect { it.isDirectory() ? it : zipTree(it) }
+  from sourceSets.test.output
+  from sourceSets.main.output
+  from 'src/main/resources/run_virus.sh'
+  exclude 'io/github/avt/env/P2PTestLauncher.class'
+  // in order to omit version in resulted file name
+  version = null
+}
+
+task packageTests {
+  dependsOn packageP2P
+  dependsOn packageRaft
 }
 
 // alias for packageTests

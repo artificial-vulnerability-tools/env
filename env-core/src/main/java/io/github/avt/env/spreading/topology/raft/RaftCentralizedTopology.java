@@ -3,6 +3,7 @@ package io.github.avt.env.spreading.topology.raft;
 import io.github.avt.env.spreading.Topology;
 import io.github.avt.env.spreading.meta.Network;
 import io.github.avt.env.spreading.topology.p2p.PeerToPeerNetworkTopology;
+import io.github.avt.env.util.Utils;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,6 +22,10 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
     p2p = new PeerToPeerNetworkTopology(port, network, p2pGossipDelay);
     setupRoute();
     centralNode = new CentralNode();
+  }
+
+  public RaftCentralizedTopology(Network network) {
+    this(Utils.pickRandomFreePort(), network, PeerToPeerNetworkTopology.DEFAULT_GOSSIP_PERIOD_MS);
   }
 
   private void setupRoute() {

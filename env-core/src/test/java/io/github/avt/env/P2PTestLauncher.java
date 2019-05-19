@@ -23,18 +23,14 @@ import io.github.avt.env.spreading.TopologyInformation;
 import io.github.avt.env.spreading.meta.Network;
 import io.github.avt.env.spreading.topology.p2p.ListOfPeers;
 import io.github.avt.env.spreading.topology.p2p.PeerToPeerNetworkTopology;
-import io.vertx.core.Vertx;
-import io.vertx.core.VertxOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
-public class TestLauncher extends Launcher {
+public class P2PTestLauncher extends Launcher {
 
-  private static final Logger log = LoggerFactory.getLogger(TestLauncher.class);
-
-  public static final String TEST_FILE_NAME = "test-file.hello";
+  private static final Logger log = LoggerFactory.getLogger(P2PTestLauncher.class);
 
   @Override
   public Topology topology() {
@@ -43,7 +39,6 @@ public class TestLauncher extends Launcher {
 
   @Override
   public synchronized void launch(int envPort) {
-    Vertx.vertx(new VertxOptions().setEventLoopPoolSize(1)).fileSystem().createFileBlocking(TEST_FILE_NAME + "." + envPort);
     TopologyInformation topologyInformation = topology.topologyInformation();
     ListOfPeers peers = (ListOfPeers) topologyInformation;
     Objects.requireNonNull(peers);

@@ -35,9 +35,9 @@ public class HugeAmountOfNodesSpreading {
 
   @Test(timeout = 60 * 1000 * 20)
   public void test100Nodes(TestContext testContext) throws InterruptedException {
-    testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
+    testContext.assertTrue(Commons.TEST_FILE_WITH_P2P_VIRUS.exists(), "Test file with a virus should exists");
     final int amountOfNodes = 10;
-    log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
+    log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_P2P_VIRUS.getAbsolutePath());
     runP2PNetworkTest(amountOfNodes, testContext);
   }
 
@@ -64,7 +64,7 @@ public class HugeAmountOfNodesSpreading {
     Async oneNodeInfected = testContext.async();
     infectionClient.infect(
       new HostWithEnvironment(Commons.LOCALHOST, avtService.envPort()),
-      Commons.TEST_FILE_WITH_VIRUS)
+      Commons.TEST_FILE_WITH_P2P_VIRUS)
       .setHandler(event -> {
         if (event.succeeded()) {
           gossipClient.gossipWith(event.result(), infectedHostsWithoutInfection);

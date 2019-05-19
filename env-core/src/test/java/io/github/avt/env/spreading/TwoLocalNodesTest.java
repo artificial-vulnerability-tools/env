@@ -35,8 +35,8 @@ public class TwoLocalNodesTest {
 
   @Test
   public void infectionShouldSpread(TestContext testContext) {
-    testContext.assertTrue(Commons.TEST_FILE_WITH_VIRUS.exists(), "Test file with a virus should exists");
-    log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_VIRUS.getAbsolutePath());
+    testContext.assertTrue(Commons.TEST_FILE_WITH_P2P_VIRUS.exists(), "Test file with a virus should exists");
+    log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_P2P_VIRUS.getAbsolutePath());
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     var env1 = new AVTService(FIRST_ENV_NODE_PORT);
     var env2 = new AVTService(SECOND_ENV_NODE_PORT);
@@ -56,7 +56,7 @@ public class TwoLocalNodesTest {
     Async oneNodeInfected = testContext.async();
     infectionClient.infect(
       new HostWithEnvironment(Commons.LOCALHOST, FIRST_ENV_NODE_PORT),
-      Commons.TEST_FILE_WITH_VIRUS)
+      Commons.TEST_FILE_WITH_P2P_VIRUS)
       .setHandler(event -> {
         if (event.succeeded()) {
           InfectedHost infectedHost = new InfectedHost(new HostWithEnvironment(Commons.LOCALHOST, SECOND_ENV_NODE_PORT), InfectedHost.NOT_INFECTED);
