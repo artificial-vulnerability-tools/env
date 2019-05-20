@@ -15,7 +15,8 @@ public class RandomizedRangeElectionTimoutModel implements ElectionTimoutModel {
 
   @Override
   public long generateDelay() {
-    long dif = toExclusive - fromInclusive;
-    return (rnd.nextLong() % dif) + toExclusive;
+    long dif = toExclusive - fromInclusive + 1;
+    long rnd = Math.abs(this.rnd.nextLong()) % dif;
+    return rnd + fromInclusive;
   }
 }
