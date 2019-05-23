@@ -79,4 +79,7 @@ public class ListOfPeers implements TopologyInformation {
     }
   }
 
+  public InfectedHost thisPeer() {
+    return thisPeer;
+  }
 }

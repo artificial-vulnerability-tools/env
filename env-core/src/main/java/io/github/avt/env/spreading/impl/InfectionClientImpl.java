@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Objects;
 import java.util.Optional;
 
 public class InfectionClientImpl implements InfectionClient {
@@ -71,10 +70,14 @@ public class InfectionClientImpl implements InfectionClient {
           .sendStream(fileStream, ar -> {
             if (ar.succeeded()) {
               HttpResponse<Buffer> response = ar.result();
-              Objects.requireNonNull(response);
               JsonObject entries = response.bodyAsJsonObject();
-              Objects.requireNonNull(entries);
-              result.complete(new InfectedHost(hostWithEnvironment, entries.getInteger(AVTService.TOPOLOGY_SERVICE_PORT)));
+              log.info("Received on infection:'\n{}", entries.encodePrettily());
+              if (entries.containsKey(AVTService.TOPOLOGY_SERVICE_PORT)) {
+                Integer port = entries.getInteger(AVTService.TOPOLOGY_SERVICE_PORT);
+                result.complete(new InfectedHost(hostWithEnvironment, port));
+              } else {
+                result.fail(entries.getString("error"));
+              }
             } else {
               result.fail(ar.cause());
             }

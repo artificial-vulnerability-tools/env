@@ -2,23 +2,23 @@ package io.github.avt.env.spreading.topology.raft;
 
 public class ElectionResult {
 
-  private final Integer voted;
-  private final Integer total;
+  private final Long voted;
+  private final Long total;
 
-  public ElectionResult(int voted, int total) {
+  public ElectionResult(Long voted, Long total) {
     this.voted = voted;
     this.total = total;
   }
 
   public boolean isQuorum() {
-    return voted / total.doubleValue() > 0.5d;
+    return voted.doubleValue() / total.doubleValue() > 0.5d;
   }
 
-  public int voted() {
+  public Long voted() {
     return voted;
   }
 
-  public int total() {
+  public Long total() {
     return total;
   }
 
