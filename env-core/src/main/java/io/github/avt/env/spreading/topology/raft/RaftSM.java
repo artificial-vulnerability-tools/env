@@ -31,8 +31,10 @@ public class RaftSM {
   private RaftState currentState = new Follower();
   private long electionTimerId = 0;
   private long heartbeatTimerId = 0;
-  private long term = 0;
+  private long currentTerm = 0;
   private final ListOfPeers peers;
+  private InfectedHost votedFor = null;
+  private ElectionResult lastElections = null;
 
   public RaftSM(Vertx vertx, ListOfPeers peers, ElectionTimoutModel electionTimoutModel, long heartBeatTimeout) {
     this.vertx = vertx;
@@ -40,6 +42,24 @@ public class RaftSM {
     this.electionTimoutModel = electionTimoutModel;
     this.heartBeatTimeout = heartBeatTimeout;
     this.webClient = WebClient.create(vertx);
+    peers.newPeerHandler(peer -> {
+      if (lastElections != null) {
+        reElect();
+      } else {
+        reElect();
+      }
+    });
+
+    vertx.setPeriodic(1000, event -> {
+      synchronized (syncLock) {
+        log.info("Current raft state: term='{}', peers='{}', state='{}', votedFor='{}'",
+          currentTerm,
+          peers.onlyPeersWithTopologyService().stream().map(InfectedHost::toString).collect(Collectors.joining(", ")),
+          currentState.toString(),
+          votedFor
+        );
+      }
+    });
   }
 
   public void startRaftNode() {
@@ -50,23 +70,24 @@ public class RaftSM {
 
   private void startElectionTimer() {
     synchronized (syncLock) {
-      if (currentState instanceof Follower || currentState instanceof Candidate) {
+      if (isFollower() || isCandidate()) {
         long electionTimeout = electionTimoutModel.generateDelay();
         log.info("Staring election timeout on {}ms", electionTimeout);
+        vertx.cancelTimer(electionTimerId);
         electionTimerId = vertx.setTimer(electionTimeout, event -> {
           log.info("Triggering becoming a candidate procedure");
           becomeCandidate();
         });
       } else {
-        log.info("Can't start election timer since '{}'!='Follower'", currentState);
+        log.info("Can't start election timer since '{}'!='Follower' or 'Candidate'", currentState);
       }
     }
   }
 
   private void becomeCandidate() {
     synchronized (syncLock) {
-      if (currentState instanceof Follower) {
-        term++;
+      if (isFollower()) {
+        currentTerm++;
         log.info("Becoming a candidate");
         currentState = new Candidate();
         requestVotes().setHandler(event -> {
@@ -76,15 +97,15 @@ public class RaftSM {
             if (result.isQuorum()) {
               becomeLeader();
             } else {
-              resetElectionTimeout();
+              startElectionTimer();
             }
           } else {
             log.error("An error during voting process occurred", event.cause());
           }
         });
-      } else if (currentState instanceof Candidate) {
+      } else if (isCandidate()) {
         log.info("Already a candidate");
-      } else if (currentState instanceof Leader) {
+      } else if (isLeader()) {
         log.error("Leader can't become a candidate");
       } else {
         log.error("Unknown state: {}", currentState);
@@ -94,8 +115,10 @@ public class RaftSM {
 
   private void becomeLeader() {
     synchronized (syncLock) {
-      if (currentState instanceof Candidate) {
+      if (isCandidate()) {
         log.info("Becoming a leader");
+        currentState = new Leader();
+        votedFor = null;
         startSendingHeartBeats();
       } else {
         log.error("'{}' can't become a leader", currentState.toString());
@@ -104,20 +127,66 @@ public class RaftSM {
   }
 
   private void startSendingHeartBeats() {
-    heartbeatTimerId = vertx.setPeriodic(heartBeatTimeout, event -> {
+    synchronized (syncLock) {
+      heartbeatTimerId = vertx.setPeriodic(heartBeatTimeout, event -> {
+        synchronized (syncLock) {
+          final JsonObject body = JsonObject.mapFrom(generateAppendEntries());
+          if (isLeader()) {
+            final Set<InfectedHost> infectedHosts = peers.onlyPeersWithTopologyService();
+            log.info("Sending heartbeats to {} nodes.", infectedHosts.size());
+            final List<Future> collect = infectedHosts.stream().map(infectedHost -> {
+              Future<HttpResponse<Buffer>> res = Future.future();
+              webClient.postAbs(
+                String.format("http://%s:%d%s", infectedHost.getHostWithEnv().getHost(), infectedHost.topologyServicePort(), RaftCentralizedTopology.HEART_BEAT)
+              ).sendJsonObject(body, res);
+              return res;
+            }).collect(Collectors.toList());
+            CompositeFuture.all(collect).map(compositeFuture -> {
 
-    });
+              long heartBeatOk = compositeFuture.list().stream()
+                .map(o -> (HttpResponse<Buffer>) o)
+                .map(response -> response.bodyAsJsonObject().mapTo(AppendEntriesResponse.class))
+                .filter(AppendEntriesResponse::isSuccess)
+                .count();
+              return new HeartbeatResult(heartBeatOk, (long) collect.size());
+            }).setHandler(result -> {
+              if (result.succeeded()) {
+                final HeartbeatResult res = result.result();
+                log.info("Heartbeat result: " + res);
+              } else {
+                log.error("Heartbeat failed: ", result.cause());
+              }
+            });
+          }
+        }
+      });
+    }
+  }
+
+  private AppendEntries generateAppendEntries() {
+    synchronized (syncLock) {
+      return new AppendEntries(currentTerm, peers.thisPeer().toString());
+    }
   }
 
   public VoteResponse voteRequested(VoteRequest voteRequest) {
     synchronized (syncLock) {
-      return new VoteResponse(1, false);
+      if (currentTerm < voteRequest.getTerm()) {
+        log.info("Voting for {}", voteRequest.getCandidate());
+        currentTerm = voteRequest.getTerm();
+        votedFor = new InfectedHost(voteRequest.getCandidate());
+        startElectionTimer();
+        return new VoteResponse(currentTerm, true);
+      } else {
+        log.info("Not voting for {}", voteRequest.getCandidate());
+        return new VoteResponse(currentTerm, false);
+      }
     }
   }
 
   public Future<ElectionResult> requestVotes() {
     synchronized (syncLock) {
-      Set<InfectedHost> hostToRequest = peers.currentPeers();
+      Set<InfectedHost> hostToRequest = peers.onlyPeersWithTopologyService();
       List<Future> futures = hostToRequest.stream().map(infectedHost ->
         webClient.postAbs(String.format("http://%s:%d%s",
           infectedHost.getHostWithEnv().getHost(),
@@ -125,7 +194,7 @@ public class RaftSM {
           RaftCentralizedTopology.REQUEST_VOTE)))
         .map(request -> {
           Future<HttpResponse<Buffer>> res = Future.future();
-          VoteRequest vote = new VoteRequest(term, peers.thisPeer().toString());
+          VoteRequest vote = new VoteRequest(currentTerm, peers.thisPeer().toString());
           request.sendJsonObject(JsonObject.mapFrom(vote), res);
           return res;
         }).collect(Collectors.toList());
@@ -133,25 +202,56 @@ public class RaftSM {
         long votedForThisNode = compositeFuture.list().stream()
           .map(o -> (HttpResponse<Buffer>) o)
           .map(response -> response.bodyAsJsonObject().mapTo(VoteResponse.class))
-          .filter(VoteResponse::voteGranted)
+          .filter(VoteResponse::isVoteGranted)
           .count();
         return new ElectionResult(votedForThisNode + 1, (long) futures.size() + 1);
       });
     }
   }
 
-  public void appendEntriesReceived(AppendEntries entries) {
+  public AppendEntriesResponse appendEntriesReceived(AppendEntries entries) {
     synchronized (syncLock) {
-      if (currentState instanceof Follower) {
-        resetElectionTimeout();
+      if (entries.getTerm() < currentTerm) {
+        log.info("Received term('{}') lower than current('{}')", entries.getTerm(), currentTerm);
+        return new AppendEntriesResponse(currentTerm, false);
+      } else if (entries.getTerm() > currentTerm) {
+        log.info("Received term('{}') bigger than current('{}')", entries.getTerm(), currentTerm);
+        return startFollow(entries.getTerm(), new InfectedHost(entries.getLeaderId()));
+      } else if (new InfectedHost(entries.getLeaderId()).equals(votedFor)) {
+        log.info("success heartbeat from leader");
+        return new AppendEntriesResponse(currentTerm, true);
+      } else {
+        log.info("few leaders situation detected... becoming a follower");
+        reElect();
+        return new AppendEntriesResponse(currentTerm, false);
       }
     }
   }
 
-  private void resetElectionTimeout() {
+  private void reElect() {
+    startFollow(currentTerm, null);
+  }
+
+  private boolean isCandidate() {
+    return currentState instanceof Candidate;
+  }
+
+  private boolean isLeader() {
+    return currentState instanceof Leader;
+  }
+
+  private boolean isFollower() {
+    return currentState instanceof Follower;
+  }
+
+  private AppendEntriesResponse startFollow(long term, InfectedHost host) {
     synchronized (syncLock) {
-      vertx.cancelTimer(electionTimerId);
+      log.info("Start following '{}'", host);
+      votedFor = host;
+      currentTerm = term;
+      currentState = new Follower();
       startElectionTimer();
+      return new AppendEntriesResponse(currentTerm, true);
     }
   }
 }

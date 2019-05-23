@@ -61,7 +61,7 @@ public class Raft3Nodes extends Base {
         }
       });
     oneNodeInfected.await(30_000);
-    Thread.sleep(20000);
+    Thread.sleep(40000);
     undeploy(n, testContext, idsToUndeploy);
   }
 }

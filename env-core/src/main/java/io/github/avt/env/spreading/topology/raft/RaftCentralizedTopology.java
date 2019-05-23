@@ -7,12 +7,14 @@ import io.github.avt.env.util.Utils;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class RaftCentralizedTopology implements Topology<CentralNode> {
 
+  private static final Logger log = LoggerFactory.getLogger(RaftCentralizedTopology.class);
   public static final String HEART_BEAT = "/heartBeat";
   public static final String REQUEST_VOTE = "/requestVote";
 
@@ -22,9 +24,6 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
   private final ElectionTimoutModel electionTimoutModel;
   private final long heartbeatTimeout;
   private final int port;
-
-
-  private final AtomicReference<RaftState> currentState = new AtomicReference<>(new Follower());
   private RaftSM raftSM;
 
   public RaftCentralizedTopology(Vertx vertx, ElectionTimoutModel electionTimoutModel, long heartbeatTimeout, int port, Network network, int p2pGossipDelay) {
@@ -44,13 +43,21 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
   private void setupRoute() {
     p2p.router().post(REQUEST_VOTE).handler(ctx -> {
       ctx.request().bodyHandler(body -> {
-        final VoteResponse voteResponse = raftSM.voteRequested(body.toJsonObject().mapTo(VoteRequest.class));
+        final VoteRequest voteRequest = body.toJsonObject().mapTo(VoteRequest.class);
+        final VoteResponse voteResponse = raftSM.voteRequested(voteRequest);
         ctx.response().end(Buffer.buffer(JsonObject.mapFrom(voteResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
+        log.info("Request vote request:\n{}\nresponse:\n{}", voteRequest, voteResponse);
       });
     });
 
     p2p.router().post(HEART_BEAT).handler(ctx -> {
-
+      ctx.request().bodyHandler(body -> {
+        final JsonObject entries = body.toJsonObject();
+        final AppendEntries request = entries.mapTo(AppendEntries.class);
+        final AppendEntriesResponse appendEntriesResponse = raftSM.appendEntriesReceived(request);
+        ctx.response().end(Buffer.buffer(JsonObject.mapFrom(appendEntriesResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
+        log.info("Heartbeat request:\n{}\nresponse:\n{}", request, appendEntriesResponse);
+      });
     });
   }
 

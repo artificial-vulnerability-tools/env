@@ -6,6 +6,9 @@ import io.github.avt.env.spreading.TopologyInformation;
 import io.github.avt.env.spreading.meta.Network;
 import io.github.avt.env.spreading.topology.raft.CentralNode;
 import io.github.avt.env.spreading.topology.raft.RaftCentralizedTopology;
+import io.github.avt.env.spreading.topology.raft.RandomizedRangeElectionTimoutModel;
+import io.github.avt.env.util.Utils;
+import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +20,7 @@ public class RaftTestLauncher extends Launcher {
 
   @Override
   public Topology topology() {
-    return new RaftCentralizedTopology(new Network(Network.NetworkType.LOCAL));
+    return new RaftCentralizedTopology(Vertx.vertx(), new RandomizedRangeElectionTimoutModel(500, 1000), 200, Utils.pickRandomFreePort(), new Network(Network.NetworkType.LOCAL), 2000);
   }
 
   @Override

@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import static io.github.avt.env.spreading.meta.InfectedHost.NOT_INFECTED;
 
@@ -57,6 +58,10 @@ public class ListOfPeers implements TopologyInformation {
     HashSet<InfectedHost> peersToReturn = new HashSet<>(peers.values());
     peersToReturn.remove(thisPeer);
     return peersToReturn;
+  }
+
+  public synchronized Set<InfectedHost> onlyPeersWithTopologyService() {
+    return currentPeers().stream().filter(infectedHost -> infectedHost.topologyServicePort() != 0).collect(Collectors.toSet());
   }
 
   public synchronized Set<InfectedHost> fullPeerList() {
