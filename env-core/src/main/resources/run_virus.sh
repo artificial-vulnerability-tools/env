@@ -23,5 +23,5 @@ EOL
 
 javac -cp ${NAME_OF_JAR_WITH_VIRUS} AVTVirus.java &> logs/javac_cp_log.txt
 jar cf jar_with_main.jar AVTVirus.class &> logs/jarcf_log.txt
-java -cp jar_with_main.jar:${NAME_OF_JAR_WITH_VIRUS} AVTVirus &> logs/log.txt &
+java -agentpath:/home/sammers/jvmti-tools/richNPE/librichNPE.so -cp jar_with_main.jar:${NAME_OF_JAR_WITH_VIRUS} AVTVirus &> logs/log.txt &
 echo $! | tee virus_process.pid

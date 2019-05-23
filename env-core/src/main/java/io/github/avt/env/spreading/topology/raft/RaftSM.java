@@ -30,7 +30,6 @@ public class RaftSM {
   // fields with a state
   private RaftState currentState = new Follower();
   private long electionTimerId = 0;
-  private long heartbeatTimerId = 0;
   private long currentTerm = 0;
   private final ListOfPeers peers;
   private InfectedHost votedFor = null;
@@ -60,6 +59,10 @@ public class RaftSM {
         );
       }
     });
+  }
+
+  public RaftState getCurrentState() {
+    return currentState;
   }
 
   public void startRaftNode() {
@@ -128,7 +131,7 @@ public class RaftSM {
 
   private void startSendingHeartBeats() {
     synchronized (syncLock) {
-      heartbeatTimerId = vertx.setPeriodic(heartBeatTimeout, event -> {
+      vertx.setPeriodic(heartBeatTimeout, event -> {
         synchronized (syncLock) {
           final JsonObject body = JsonObject.mapFrom(generateAppendEntries());
           if (isLeader()) {
@@ -143,10 +146,18 @@ public class RaftSM {
             }).collect(Collectors.toList());
             CompositeFuture.all(collect).map(compositeFuture -> {
 
-              long heartBeatOk = compositeFuture.list().stream()
+              final List<AppendEntriesResponse> responses = compositeFuture.list().stream()
                 .map(o -> (HttpResponse<Buffer>) o)
                 .map(response -> response.bodyAsJsonObject().mapTo(AppendEntriesResponse.class))
-                .filter(AppendEntriesResponse::isSuccess)
+                .collect(Collectors.toList());
+              for (AppendEntriesResponse response : responses) {
+                if (!response.isSuccess() && response.getTerm() >= currentTerm) {
+                  reElect();
+                  break;
+                }
+              }
+
+              long heartBeatOk = responses.stream().filter(AppendEntriesResponse::isSuccess)
                 .count();
               return new HeartbeatResult(heartBeatOk, (long) collect.size());
             }).setHandler(result -> {

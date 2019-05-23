@@ -17,6 +17,7 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
   private static final Logger log = LoggerFactory.getLogger(RaftCentralizedTopology.class);
   public static final String HEART_BEAT = "/heartBeat";
   public static final String REQUEST_VOTE = "/requestVote";
+  public static final String RAFT_STATE = "/raftState";
 
   private final PeerToPeerNetworkTopology p2p;
   private final CentralNode centralNode;
@@ -58,6 +59,10 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
         ctx.response().end(Buffer.buffer(JsonObject.mapFrom(appendEntriesResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
         log.info("Heartbeat request:\n{}\nresponse:\n{}", request, appendEntriesResponse);
       });
+    });
+
+    p2p.router().get(RAFT_STATE).handler(ctx -> {
+        ctx.response().end(raftSM.getCurrentState().toString());
     });
   }
 

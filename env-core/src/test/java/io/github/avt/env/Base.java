@@ -7,6 +7,7 @@ import io.github.avt.env.spreading.impl.InfectionClientImpl;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.web.client.WebClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +21,7 @@ public class Base {
   public final Vertx vertx = Vertx.vertx();
   public final InfectionClient infectionClient = new InfectionClientImpl(vertx);
   public final GossipClient gossipClient = new GossipClientImpl(vertx);
+  public final WebClient webClient = WebClient.create(vertx);
 
   public void undeploy(int amountOfNodes, TestContext testContext, List<String> idsToUndeploy) {
     Async undeployed = testContext.async(amountOfNodes);

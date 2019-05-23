@@ -5,6 +5,8 @@ import io.github.avt.env.Commons;
 import io.github.avt.env.daemon.AVTService;
 import io.github.avt.env.spreading.meta.HostWithEnvironment;
 import io.github.avt.env.spreading.meta.InfectedHost;
+import io.github.avt.env.spreading.topology.raft.Leader;
+import io.github.avt.env.spreading.topology.raft.RaftCentralizedTopology;
 import io.github.avt.env.util.Utils;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -14,10 +16,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -61,7 +61,54 @@ public class Raft3Nodes extends Base {
         }
       });
     oneNodeInfected.await(30_000);
-    Thread.sleep(40000);
+
+
+    Set<InfectedHost> infectedHosts;
+    do {
+      infectedHosts = Collections.synchronizedSet(new HashSet<>());
+      final Async topologyPorts = testContext.async(infectedHostsWithoutInfection.size());
+      Set<InfectedHost> finalInfectedHosts = infectedHosts;
+      infectedHostsWithoutInfection.stream()
+        .map(host ->
+          infectionClient.topologyServicePort(host.getHostWithEnv()).map(integer -> new InfectedHost(host.getHostWithEnv(), integer.orElse(0)))).forEach(infectedHostFuture -> {
+        infectedHostFuture.setHandler(ev -> {
+          if (ev.succeeded()) {
+            finalInfectedHosts.add(ev.result());
+            topologyPorts.countDown();
+          } else {
+            testContext.fail();
+          }
+        });
+      });
+      topologyPorts.await();
+    } while (infectedHosts.stream().anyMatch(host -> host.topologyServicePort() == 0));
+
+    log.info("All nodes are infected");
+
+    Set<InfectedHost> finalInfectedHosts1 = infectedHosts;
+    final Async singleLeader = testContext.async(5);
+    vertx.setPeriodic(1000, event -> {
+      AtomicInteger leaders = new AtomicInteger(0);
+      final Async statusResponses = testContext.async(finalInfectedHosts1.size());
+      finalInfectedHosts1.forEach(host -> {
+        webClient.getAbs(String.format("http://%s:%d%s", Commons.LOCALHOST, host.topologyServicePort(), RaftCentralizedTopology.RAFT_STATE)).send(raftStateResp -> {
+          final String state = raftStateResp.result().bodyAsString();
+          if (state.contains(new Leader().toString())) {
+            leaders.incrementAndGet();
+          } else {
+            log.info(state);
+          }
+        });
+        statusResponses.countDown();
+      });
+      statusResponses.await();
+      log.info("Leaders {}", leaders.get());
+      if (leaders.get() == 1 && singleLeader.count() != 0) {
+        singleLeader.countDown();
+      }
+
+    });
+    singleLeader.await();
     undeploy(n, testContext, idsToUndeploy);
   }
 }
