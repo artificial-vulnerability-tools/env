@@ -6,6 +6,7 @@ import io.github.avt.env.daemon.AVTService;
 import io.github.avt.env.spreading.meta.HostWithEnvironment;
 import io.github.avt.env.spreading.meta.InfectedHost;
 import io.github.avt.env.spreading.topology.raft.RaftCentralizedTopology;
+import io.github.avt.env.spreading.topology.raft.RaftStateName;
 import io.github.avt.env.util.Utils;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -15,7 +16,11 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -92,7 +97,7 @@ public class Raft3Nodes extends Base {
       finalInfectedHosts1.forEach(host -> {
         webClient.getAbs(String.format("http://%s:%d%s", Commons.LOCALHOST, host.topologyServicePort(), RaftCentralizedTopology.RAFT_STATE)).send(raftStateResp -> {
           final String state = raftStateResp.result().bodyAsString();
-          if (state.contains(new Leader().toString())) {
+          if (state.contains(RaftStateName.LEADER.name())) {
             leaders.incrementAndGet();
           } else {
             log.info(state);
