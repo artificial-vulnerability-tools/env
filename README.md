@@ -2,10 +2,11 @@
 
 | Linux + openJDK11 | macOS + openJDK11  | 
 |-------------------|--------------------|
-| [![Build1][1]][2] |  [![Build2][2]][2] | 
+| [![Build1][1]][3] |  [![Build2][2]][3] | 
 
 [1]: https://travis-matrix-badges.herokuapp.com/repos/artificial-vulnerability-tools/env/branches/master/1
 [2]: https://travis-matrix-badges.herokuapp.com/repos/artificial-vulnerability-tools/env/branches/master/2
+[3]: https://travis-ci.org/artificial-vulnerability-tools/env
 
 # env
 
