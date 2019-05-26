@@ -154,7 +154,7 @@ public class RaftSM {
           final JsonObject body = JsonObject.mapFrom(heartBeatRequest());
           if (isLeader()) {
             final Set<InfectedHost> infectedHosts = peers.onlyPeersWithTopologyService();
-            log.info("Sending heartbeats to {} nodes.", infectedHosts.size());
+            log.debug("Sending heartbeats to {} nodes.", infectedHosts.size());
             final List<Future> collect = infectedHosts.stream().map(infectedHost -> {
               Future<HttpResponse<Buffer>> res = Future.future();
               webClient.postAbs(
@@ -173,15 +173,15 @@ public class RaftSM {
               synchronized (syncLock) {
                 if (result.succeeded() && isLeader()) {
                   final HeartbeatResult heartbeat = result.result();
-                  log.info("Heartbeat result: " + heartbeat);
+                  log.debug("Heartbeat result: " + heartbeat);
                   if (!heartbeat.isQuorum()) {
                     log.info("Not leading a majority of nodes.");
                     backToFollowerState();
                   } else {
-                    log.info("Holding a majority");
+                    log.debug("Holding a majority");
                   }
                 } else {
-                  log.error("Heartbeat failed: ", result.cause());
+                  log.debug("Heartbeat failed: ", result.cause());
                 }
               }
             });
