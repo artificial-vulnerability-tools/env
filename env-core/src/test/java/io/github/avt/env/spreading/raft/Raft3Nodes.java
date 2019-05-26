@@ -34,6 +34,7 @@ public class Raft3Nodes extends Base {
   public void simple3NodesTest(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
     int n = 3;
+    int leadersConfirmations = 20;
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     final Async deployment = testContext.async(n);
     final List<AVTService> services = IntStream.rangeClosed(1, n).map(operand -> Utils.pickRandomFreePort()).mapToObj(value -> {
@@ -90,29 +91,31 @@ public class Raft3Nodes extends Base {
     log.info("All nodes are infected");
 
     Set<InfectedHost> finalInfectedHosts1 = infectedHosts;
-    final Async singleLeader = testContext.async(5);
+    final Async singleLeader = testContext.async(leadersConfirmations);
     vertx.setPeriodic(1000, event -> {
-      AtomicInteger leaders = new AtomicInteger(0);
-      final Async statusResponses = testContext.async(finalInfectedHosts1.size());
-      finalInfectedHosts1.forEach(host -> {
-        webClient.getAbs(String.format("http://%s:%d%s", Commons.LOCALHOST, host.topologyServicePort(), RaftCentralizedTopology.RAFT_STATE)).send(raftStateResp -> {
-          final String state = raftStateResp.result().bodyAsString();
-          if (state.contains(RaftStateName.LEADER.name())) {
-            leaders.incrementAndGet();
-          } else {
-            log.info(state);
-          }
+      vertx.executeBlocking(e -> {
+        AtomicInteger leaders = new AtomicInteger(0);
+        final Async statusResponses = testContext.async(finalInfectedHosts1.size());
+        finalInfectedHosts1.forEach(host -> {
+          webClient.getAbs(String.format("http://%s:%d%s", Commons.LOCALHOST, host.topologyServicePort(), RaftCentralizedTopology.RAFT_STATE)).send(raftStateResp -> {
+            final String state = raftStateResp.result().bodyAsString();
+            log.info("State: '{}'. Host: '{}'", state, host.toString());
+            if (state.trim().equals(RaftStateName.LEADER.name())) {
+              leaders.incrementAndGet();
+            }
+            statusResponses.countDown();
+          });
         });
-        statusResponses.countDown();
+        statusResponses.await();
+        log.info("Leaders {}", leaders.get());
+        if (leaders.get() == 1 && singleLeader.count() != 0) {
+          singleLeader.countDown();
+        }
+        e.complete();
+      }, e -> {
       });
-      statusResponses.await();
-      log.info("Leaders {}", leaders.get());
-      if (leaders.get() == 1 && singleLeader.count() != 0) {
-        singleLeader.countDown();
-      }
-
     });
-    singleLeader.await();
+    singleLeader.await(20_000);
     undeploy(n, testContext, idsToUndeploy);
   }
 }

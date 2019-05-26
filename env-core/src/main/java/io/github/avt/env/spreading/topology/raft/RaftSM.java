@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -90,8 +91,7 @@ public class RaftSM {
               becomeLeader();
             } else {
               log.info("Failed to became a leader. Reason: no quorum. Getting back to a follower state");
-              changeStateTo(RaftStateName.FOLLOWER);
-              resetElectionTimeout();
+              backToFollowerState();
             }
           } else {
             log.error("An error during voting process occurred", event.cause());
@@ -107,11 +107,17 @@ public class RaftSM {
     }
   }
 
+  private void backToFollowerState() {
+    log.info("Getting back to the follower state");
+    changeStateTo(RaftStateName.FOLLOWER);
+    resetElectionTimeout();
+  }
+
   private void changeStateToCandidate() {
     changingState(cur -> {
       log.info("Becoming a candidate");
       cur.setCurrentTerm(currentState.getCurrentTerm() + 1);
-      cur.setVotedFor(peers.thisPeer());
+      cur.setVotedFor(Optional.of(peers.thisPeer()));
       cur.setRaftStateName(RaftStateName.CANDIDATE);
     });
   }
@@ -158,16 +164,17 @@ public class RaftSM {
             }).collect(Collectors.toList());
             CompositeFuture.all(collect).map(compositeFuture -> {
 
+
               final List<HeartBeatResponse> responses = compositeFuture.list().stream()
                 .map(o -> (HttpResponse<Buffer>) o)
                 .map(response -> response.bodyAsJsonObject().mapTo(HeartBeatResponse.class))
                 .collect(Collectors.toList());
-//              for (HeartBeatResponse response : responses) {
-//                if (!response.isSuccess() && response.getTerm() >= currentTerm) {
-//                  reElect();
-//                  break;
-//                }
-//              }
+              for (HeartBeatResponse response : responses) {
+                if (!response.isSuccess() && response.getTerm() >= currentState.getCurrentTerm() ) {
+                  backToFollowerState();
+                  break;
+                }
+              }
 
               long heartBeatOk = responses.stream().filter(HeartBeatResponse::isSuccess)
                 .count();
@@ -198,7 +205,7 @@ public class RaftSM {
         log.info("Voting for {}", voteRequest.getCandidate());
         changingState(cur -> {
           cur.setCurrentTerm(voteRequest.getTerm());
-          cur.setVotedFor(new InfectedHost(voteRequest.getCandidate()));
+          cur.setVotedFor(Optional.of(new InfectedHost(voteRequest.getCandidate())));
         });
         resetElectionTimeout();
         return new VoteResponse(currentState.getCurrentTerm(), true);
@@ -238,7 +245,7 @@ public class RaftSM {
     synchronized (syncLock) {
       InfectedHost infectedHost = new InfectedHost(request.getLeaderId());
       long term = request.getTerm();
-      if (currentState.getVotedFor().equals(infectedHost) && currentState.getCurrentTerm() == term) {
+      if (currentState.getVotedFor().equals(Optional.of(infectedHost)) && currentState.getCurrentTerm() == term) {
         return new HeartBeatResponse(currentState.getCurrentTerm(), true);
       } else {
         return new HeartBeatResponse(currentState.getCurrentTerm(), false);
@@ -247,15 +254,15 @@ public class RaftSM {
   }
 
   private boolean isCandidate() {
-    return currentState.stateName() == RaftStateName.CANDIDATE;
+    return currentState.stateName().equals(RaftStateName.CANDIDATE.name());
   }
 
   private boolean isLeader() {
-    return currentState.stateName() == RaftStateName.LEADER;
+    return currentState.stateName().equals(RaftStateName.LEADER.name());
   }
 
   private boolean isFollower() {
-    return currentState.stateName() == RaftStateName.FOLLOWER;
+    return currentState.stateName().equals(RaftStateName.FOLLOWER.name());
   }
 
   private void changeRaftState(RaftState newState) {
