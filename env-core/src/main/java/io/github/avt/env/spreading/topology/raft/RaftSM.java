@@ -31,8 +31,10 @@ public class RaftSM {
   private RaftState currentState = new Follower();
   private long electionTimerId = 0;
   private long currentTerm = 0;
+
   private final ListOfPeers peers;
   private InfectedHost votedFor = null;
+
   private ElectionResult lastElections = null;
 
   public RaftSM(Vertx vertx, ListOfPeers peers, ElectionTimoutModel electionTimoutModel, long heartBeatTimeout) {
