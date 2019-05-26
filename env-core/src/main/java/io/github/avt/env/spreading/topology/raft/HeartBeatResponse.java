@@ -1,11 +1,11 @@
 package io.github.avt.env.spreading.topology.raft;
 
-public class AppendEntriesResponse {
+public class HeartBeatResponse {
 
   private long term;
   private boolean success;
 
-  public AppendEntriesResponse(long term, boolean success) {
+  public HeartBeatResponse(long term, boolean success) {
     this.term = term;
     this.success = success;
   }
@@ -26,12 +26,12 @@ public class AppendEntriesResponse {
     this.success = success;
   }
 
-  public AppendEntriesResponse() {
+  public HeartBeatResponse() {
   }
 
   @Override
   public String toString() {
-    return "AppendEntriesResponse{" +
+    return "HeartBeatResponse{" +
       "term=" + term +
       ", success=" + success +
       '}';

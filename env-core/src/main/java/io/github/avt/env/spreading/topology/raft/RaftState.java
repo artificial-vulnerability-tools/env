@@ -2,16 +2,23 @@ package io.github.avt.env.spreading.topology.raft;
 
 import io.github.avt.env.spreading.meta.InfectedHost;
 
-public abstract class RaftState {
+public class RaftState {
 
   private long currentTerm = 0;
   private InfectedHost votedFor = null;
+  private RaftStateName raftStateName = RaftStateName.FOLLOWER;
 
-  public abstract String stateName();
+  public RaftStateName stateName() {
+    return raftStateName;
+  }
+
+  public RaftState() {
+  }
 
   public RaftState(RaftState state) {
     this.currentTerm = state.currentTerm;
     this.votedFor = state.votedFor;
+    this.raftStateName = state.raftStateName;
   }
 
   public RaftState(long currentTerm, InfectedHost votedFor) {
@@ -19,20 +26,27 @@ public abstract class RaftState {
     this.votedFor = votedFor;
   }
 
+  public RaftState setRaftStateName(RaftStateName raftStateName) {
+    this.raftStateName = raftStateName;
+    return this;
+  }
+
   public long getCurrentTerm() {
     return currentTerm;
   }
 
-  public void setCurrentTerm(long currentTerm) {
+  public RaftState setCurrentTerm(long currentTerm) {
     this.currentTerm = currentTerm;
+    return this;
   }
 
   public InfectedHost getVotedFor() {
     return votedFor;
   }
 
-  public void setVotedFor(InfectedHost votedFor) {
+  public RaftState setVotedFor(InfectedHost votedFor) {
     this.votedFor = votedFor;
+    return this;
   }
 
   @Override

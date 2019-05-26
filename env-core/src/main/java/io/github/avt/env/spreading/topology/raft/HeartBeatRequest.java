@@ -1,16 +1,16 @@
 package io.github.avt.env.spreading.topology.raft;
 
-public class AppendEntries {
+public class HeartBeatRequest {
 
   private long term;
   private String leaderId;
 
-  public AppendEntries(long term, String leaderId) {
+  public HeartBeatRequest(long term, String leaderId) {
     this.term = term;
     this.leaderId = leaderId;
   }
 
-  public AppendEntries() {
+  public HeartBeatRequest() {
   }
 
   public long getTerm() {
@@ -23,7 +23,7 @@ public class AppendEntries {
 
   @Override
   public String toString() {
-    return "AppendEntries{" +
+    return "HeartBeatRequest{" +
       "term=" + term +
       ", leaderId='" + leaderId + '\'' +
       '}';

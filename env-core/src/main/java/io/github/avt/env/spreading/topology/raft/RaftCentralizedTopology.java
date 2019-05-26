@@ -54,15 +54,15 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
     p2p.router().post(HEART_BEAT).handler(ctx -> {
       ctx.request().bodyHandler(body -> {
         final JsonObject entries = body.toJsonObject();
-        final AppendEntries request = entries.mapTo(AppendEntries.class);
-        final AppendEntriesResponse appendEntriesResponse = raftSM.appendEntriesReceived(request);
-        ctx.response().end(Buffer.buffer(JsonObject.mapFrom(appendEntriesResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
-        log.info("Heartbeat request:\n{}\nresponse:\n{}", request, appendEntriesResponse);
+        final HeartBeatRequest request = entries.mapTo(HeartBeatRequest.class);
+        final HeartBeatResponse heartBeatResponse = raftSM.heartBeatReceived(request);
+        ctx.response().end(Buffer.buffer(JsonObject.mapFrom(heartBeatResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
+        log.info("Heartbeat request:\n{}\nresponse:\n{}", request, heartBeatResponse);
       });
     });
 
     p2p.router().get(RAFT_STATE).handler(ctx -> {
-        ctx.response().end(raftSM.getCurrentState().toString());
+        ctx.response().end(raftSM.getCurrentState().stateName().toString());
     });
   }
 
