@@ -34,7 +34,7 @@ public class Raft3Nodes extends Base {
   public void simple3NodesTest(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
     int n = 3;
-    int leadersConfirmations = 20;
+    int leadersConfirmations = 5;
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     final Async deployment = testContext.async(n);
     final List<AVTService> services = IntStream.rangeClosed(1, n).map(operand -> Utils.pickRandomFreePort()).mapToObj(value -> {

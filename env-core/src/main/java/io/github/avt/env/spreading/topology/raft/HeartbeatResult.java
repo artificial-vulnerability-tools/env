@@ -25,4 +25,11 @@ public class HeartbeatResult {
       ", total=" + total +
       '}';
   }
+
+  public boolean isQuorum() {
+    if (heartBeatSuccess.equals(total)) {
+      return true;
+    }
+    return Long.valueOf(heartBeatSuccess + 1).doubleValue() / Long.valueOf(total + 1).doubleValue() > 0.5d;
+  }
 }

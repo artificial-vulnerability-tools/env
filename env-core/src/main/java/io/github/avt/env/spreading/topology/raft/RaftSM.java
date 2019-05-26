@@ -65,9 +65,9 @@ public class RaftSM {
   private void resetElectionTimeout() {
     synchronized (syncLock) {
       if (isFollower() || isCandidate()) {
+        vertx.cancelTimer(electionTimerId);
         long electionTimeout = electionTimoutModel.generateDelay();
         log.info("Staring election timeout on {}ms", electionTimeout);
-        vertx.cancelTimer(electionTimerId);
         electionTimerId = vertx.setTimer(electionTimeout, event -> {
           log.info("Triggering becoming a candidate procedure");
           becomeCandidate();
@@ -163,28 +163,26 @@ public class RaftSM {
               return res;
             }).collect(Collectors.toList());
             CompositeFuture.all(collect).map(compositeFuture -> {
-
-
-              final List<HeartBeatResponse> responses = compositeFuture.list().stream()
+              var heartBeatOk = compositeFuture.list().stream()
                 .map(o -> (HttpResponse<Buffer>) o)
                 .map(response -> response.bodyAsJsonObject().mapTo(HeartBeatResponse.class))
-                .collect(Collectors.toList());
-              for (HeartBeatResponse response : responses) {
-                if (!response.isSuccess() && response.getTerm() >= currentState.getCurrentTerm() ) {
-                  backToFollowerState();
-                  break;
-                }
-              }
-
-              long heartBeatOk = responses.stream().filter(HeartBeatResponse::isSuccess)
+                .filter(HeartBeatResponse::isSuccess)
                 .count();
               return new HeartbeatResult(heartBeatOk, (long) collect.size());
             }).setHandler(result -> {
-              if (result.succeeded()) {
-                final HeartbeatResult res = result.result();
-                log.info("Heartbeat result: " + res);
-              } else {
-                log.error("Heartbeat failed: ", result.cause());
+              synchronized (syncLock) {
+                if (result.succeeded() && isLeader()) {
+                  final HeartbeatResult heartbeat = result.result();
+                  log.info("Heartbeat result: " + heartbeat);
+                  if (!heartbeat.isQuorum()) {
+                    log.info("Not leading a majority of nodes.");
+                    backToFollowerState();
+                  } else {
+                    log.info("Holding a majority");
+                  }
+                } else {
+                  log.error("Heartbeat failed: ", result.cause());
+                }
               }
             });
           }
@@ -204,6 +202,7 @@ public class RaftSM {
       if (currentState.getCurrentTerm() < voteRequest.getTerm()) {
         log.info("Voting for {}", voteRequest.getCandidate());
         changingState(cur -> {
+          cur.setRaftStateName(RaftStateName.FOLLOWER);
           cur.setCurrentTerm(voteRequest.getTerm());
           cur.setVotedFor(Optional.of(new InfectedHost(voteRequest.getCandidate())));
         });
@@ -245,7 +244,20 @@ public class RaftSM {
     synchronized (syncLock) {
       InfectedHost infectedHost = new InfectedHost(request.getLeaderId());
       long term = request.getTerm();
+      // if voted this term candidate
       if (currentState.getVotedFor().equals(Optional.of(infectedHost)) && currentState.getCurrentTerm() == term) {
+        resetElectionTimeout();
+        return new HeartBeatResponse(currentState.getCurrentTerm(), true);
+      }
+      // if term simply higher
+      else if (currentState.getCurrentTerm() < term) {
+        log.info("Received heartbeat with higher term... following");
+        changingState(cur -> {
+          cur.setRaftStateName(RaftStateName.FOLLOWER);
+          cur.setCurrentTerm(term);
+          cur.setVotedFor(Optional.of(infectedHost));
+        });
+        resetElectionTimeout();
         return new HeartBeatResponse(currentState.getCurrentTerm(), true);
       } else {
         return new HeartBeatResponse(currentState.getCurrentTerm(), false);

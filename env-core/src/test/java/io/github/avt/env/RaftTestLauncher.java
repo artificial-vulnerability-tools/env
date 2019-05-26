@@ -20,7 +20,7 @@ public class RaftTestLauncher extends Launcher {
 
   @Override
   public Topology topology() {
-    return new RaftCentralizedTopology(Vertx.vertx(), new RandomizedRangeElectionTimoutModel(500, 1000), 200, Utils.pickRandomFreePort(), new Network(Network.NetworkType.LOCAL), 2000);
+    return new RaftCentralizedTopology(Vertx.vertx(), new RandomizedRangeElectionTimoutModel(500, 1000), 50, Utils.pickRandomFreePort(), new Network(Network.NetworkType.LOCAL), 2000);
   }
 
   @Override
