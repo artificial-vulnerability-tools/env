@@ -74,7 +74,7 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
   @Override
   public void runTopologyService(int envPort) {
     p2p.runTopologyService(envPort);
-    raftSM = new RaftSM(vertx, p2p.topologyInformation(), electionTimoutModel, heartbeatTimeout);
+    raftSM = new RaftSM(vertx, p2p.topologyInformation(), electionTimoutModel, heartbeatTimeout , centralNode);
     raftSM.startRaftNode();
   }
 

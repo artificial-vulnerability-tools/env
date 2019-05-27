@@ -25,6 +25,7 @@ public class RaftSM {
   // immutable
   private final Vertx vertx;
   private final WebClient webClient;
+  private CentralNode centralNode;
   private final long heartBeatTimeout;
   private final ElectionTimoutModel electionTimoutModel;
   private final Object syncLock = new Object();
@@ -32,17 +33,15 @@ public class RaftSM {
   // fields with a state
   private RaftState currentState = new RaftState();
   private long electionTimerId = 0;
-
   private final ListOfPeers peers;
 
-  private ElectionResult lastElections = null;
-
-  public RaftSM(Vertx vertx, ListOfPeers peers, ElectionTimoutModel electionTimoutModel, long heartBeatTimeout) {
+  public RaftSM(Vertx vertx, ListOfPeers peers, ElectionTimoutModel electionTimoutModel, long heartBeatTimeout, CentralNode centralNode) {
     this.vertx = vertx;
     this.peers = peers;
     this.electionTimoutModel = electionTimoutModel;
     this.heartBeatTimeout = heartBeatTimeout;
     this.webClient = WebClient.create(vertx);
+    this.centralNode = centralNode;
   }
 
   public RaftState getCurrentState() {
@@ -60,7 +59,7 @@ public class RaftSM {
       if (isFollower() || isCandidate()) {
         vertx.cancelTimer(electionTimerId);
         long electionTimeout = electionTimoutModel.generateDelay();
-        log.info("Staring election timeout on {}ms", electionTimeout);
+        log.debug("Staring election timeout on {}ms", electionTimeout);
         electionTimerId = vertx.setTimer(electionTimeout, event -> {
           log.info("Triggering becoming a candidate procedure");
           becomeCandidate();
@@ -78,7 +77,6 @@ public class RaftSM {
         requestVotes().setHandler(event -> {
           if (event.succeeded()) {
             ElectionResult result = event.result();
-            lastElections = result;
             log.info("Election result: {}", result);
             if (result.isQuorum()) {
               becomeLeader();
@@ -134,6 +132,7 @@ public class RaftSM {
         log.info("Becoming a leader");
         changeStateTo(RaftStateName.LEADER);
         startSendingHeartBeats();
+        centralNode.successHeartBeatFrom(peers.thisPeer());
       } else {
         log.error("'{}' can't become a leader. Only a candidate can", currentState.stateName().toString());
       }
@@ -240,6 +239,7 @@ public class RaftSM {
       // if voted this term candidate
       if (currentState.getVotedFor().equals(Optional.of(infectedHost)) && currentState.getCurrentTerm() == term) {
         resetElectionTimeout();
+        centralNode.successHeartBeatFrom(infectedHost);
         return new HeartBeatResponse(currentState.getCurrentTerm(), true);
       }
       // if term simply higher
@@ -250,6 +250,7 @@ public class RaftSM {
           cur.setCurrentTerm(term);
           cur.setVotedFor(Optional.of(infectedHost));
         });
+        centralNode.successHeartBeatFrom(infectedHost);
         resetElectionTimeout();
         return new HeartBeatResponse(currentState.getCurrentTerm(), true);
       } else {
