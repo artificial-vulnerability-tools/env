@@ -15,4 +15,4 @@ Env is a tool for exposing an artificial vulnerability.
 ## Supported Network Topologies
 
 -  [x] Peer2Peer Network topology
--  [x] Raft-base Centralized topology  
+-  [x] [Raft-based](https://raft.github.io/) Centralized topology  
