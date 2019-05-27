@@ -43,13 +43,6 @@ public class RaftSM {
     this.electionTimoutModel = electionTimoutModel;
     this.heartBeatTimeout = heartBeatTimeout;
     this.webClient = WebClient.create(vertx);
-//    peers.newPeerHandler(peer -> {
-//      if (lastElections != null) {
-//        reElect();
-//      } else {
-//        reElect();
-//      }
-//    });
   }
 
   public RaftState getCurrentState() {

@@ -47,7 +47,7 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
         final VoteRequest voteRequest = body.toJsonObject().mapTo(VoteRequest.class);
         final VoteResponse voteResponse = raftSM.voteRequested(voteRequest);
         ctx.response().end(Buffer.buffer(JsonObject.mapFrom(voteResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
-        log.info("Request vote request:\n{}\nresponse:\n{}", voteRequest, voteResponse);
+        log.debug("Request vote request:\n{}\nresponse:\n{}", voteRequest, voteResponse);
       });
     });
 
@@ -57,7 +57,7 @@ public class RaftCentralizedTopology implements Topology<CentralNode> {
         final HeartBeatRequest request = entries.mapTo(HeartBeatRequest.class);
         final HeartBeatResponse heartBeatResponse = raftSM.heartBeatReceived(request);
         ctx.response().end(Buffer.buffer(JsonObject.mapFrom(heartBeatResponse).encodePrettily().getBytes(StandardCharsets.UTF_8)));
-        log.info("Heartbeat request:\n{}\nresponse:\n{}", request, heartBeatResponse);
+        log.debug("Heartbeat request:\n{}\nresponse:\n{}", request, heartBeatResponse);
       });
     });
 
