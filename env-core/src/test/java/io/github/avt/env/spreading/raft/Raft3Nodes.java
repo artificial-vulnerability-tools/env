@@ -16,11 +16,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -35,6 +31,28 @@ public class Raft3Nodes extends Base {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
     int n = 3;
     int leadersConfirmations = 5;
+    runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
+  }
+
+  @Test
+  public void simple5NodesTest(TestContext testContext) throws InterruptedException {
+    testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
+    int n = 5;
+    int leadersConfirmations = 5;
+    runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
+  }
+
+  @Test
+  public void simple15NodesTest(TestContext testContext) throws InterruptedException {
+    testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
+    int n = 15;
+    int leadersConfirmations = 5;
+    runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
+  }
+
+
+
+  private void runLeaderTestOnNodesCount(TestContext testContext, int n, int leadersConfirmations) {
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());
     final Async deployment = testContext.async(n);
     final List<AVTService> services = IntStream.rangeClosed(1, n).map(operand -> Utils.pickRandomFreePort()).mapToObj(value -> {
@@ -50,7 +68,7 @@ public class Raft3Nodes extends Base {
       });
       return avtService;
     }).collect(Collectors.toList());
-    deployment.await();
+    deployment.await(n * 5_000);
     final Set<InfectedHost> infectedHostsWithoutInfection = services.stream().map(avtService -> new InfectedHost(new HostWithEnvironment(Commons.LOCALHOST, avtService.envPort()), InfectedHost.NOT_INFECTED)).collect(Collectors.toSet());
     Async oneNodeInfected = testContext.async();
     final AVTService avtService = services.get(0);
@@ -92,7 +110,7 @@ public class Raft3Nodes extends Base {
 
     Set<InfectedHost> finalInfectedHosts1 = infectedHosts;
     final Async singleLeader = testContext.async(leadersConfirmations);
-    vertx.setPeriodic(1000, event -> {
+    vertx.setPeriodic(((n / 10) + 1) * 1000, event -> {
       vertx.executeBlocking(e -> {
         AtomicInteger leaders = new AtomicInteger(0);
         final Async statusResponses = testContext.async(finalInfectedHosts1.size());
@@ -115,7 +133,7 @@ public class Raft3Nodes extends Base {
       }, e -> {
       });
     });
-    singleLeader.await(20_000);
+    singleLeader.await(5_000 * leadersConfirmations);
     undeploy(n, testContext, idsToUndeploy);
   }
 }
