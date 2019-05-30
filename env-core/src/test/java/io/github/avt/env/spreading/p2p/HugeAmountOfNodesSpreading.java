@@ -27,7 +27,7 @@ public class HugeAmountOfNodesSpreading extends Base {
   public static final Logger log = LoggerFactory.getLogger(TwoLocalNodesTest.class);
 
   @Test(timeout = 60 * 1000 * 20)
-  public void test100Nodes(TestContext testContext) throws InterruptedException {
+  public void test10Nodes(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_P2P_VIRUS.exists(), "Test file with a virus should exists");
     final int amountOfNodes = 10;
     log.info("Packaged virus file: '{}'", Commons.TEST_FILE_WITH_P2P_VIRUS.getAbsolutePath());
