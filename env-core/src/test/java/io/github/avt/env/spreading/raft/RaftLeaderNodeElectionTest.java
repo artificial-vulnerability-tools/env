@@ -43,9 +43,9 @@ public class RaftLeaderNodeElectionTest extends Base {
   }
 
   @Test
-  public void simple15NodesTest(TestContext testContext) throws InterruptedException {
+  public void simple9NodesTest(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
-    int n = 15;
+    int n = 9;
     int leadersConfirmations = 5;
     runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
   }
