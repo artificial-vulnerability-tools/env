@@ -22,9 +22,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @RunWith(VertxUnitRunner.class)
-public class Raft3Nodes extends Base {
+public class RaftLeaderNodeElectionTest extends Base {
 
-  private static final Logger log = LoggerFactory.getLogger(Raft3Nodes.class);
+  private static final Logger log = LoggerFactory.getLogger(RaftLeaderNodeElectionTest.class);
 
   @Test
   public void simple3NodesTest(TestContext testContext) throws InterruptedException {
@@ -49,8 +49,6 @@ public class Raft3Nodes extends Base {
     int leadersConfirmations = 5;
     runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
   }
-
-
 
   private void runLeaderTestOnNodesCount(TestContext testContext, int n, int leadersConfirmations) {
     var idsToUndeploy = Collections.synchronizedList(new LinkedList<String>());

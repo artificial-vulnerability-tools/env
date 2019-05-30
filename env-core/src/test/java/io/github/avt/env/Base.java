@@ -5,6 +5,7 @@ import io.github.avt.env.spreading.InfectionClient;
 import io.github.avt.env.spreading.impl.GossipClientImpl;
 import io.github.avt.env.spreading.impl.InfectionClientImpl;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.web.client.WebClient;
@@ -18,7 +19,7 @@ import java.util.List;
 public class Base {
 
   private static final Logger log = LoggerFactory.getLogger(Base.class);
-  public final Vertx vertx = Vertx.vertx();
+  public final Vertx vertx = Vertx.vertx(new VertxOptions().setWorkerPoolSize(10));
   public final InfectionClient infectionClient = new InfectionClientImpl(vertx);
   public final GossipClient gossipClient = new GossipClientImpl(vertx);
   public final WebClient webClient = WebClient.create(vertx);
