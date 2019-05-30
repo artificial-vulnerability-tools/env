@@ -20,6 +20,10 @@ plugins {
   id 'signing'
 }
 
+test {
+  forkEvery = 1
+}
+
 dependencies {
 
   // byte code engineering
