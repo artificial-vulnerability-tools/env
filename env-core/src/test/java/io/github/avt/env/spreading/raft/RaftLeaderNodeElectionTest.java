@@ -114,10 +114,14 @@ public class RaftLeaderNodeElectionTest extends Base {
         final Async statusResponses = testContext.async(finalInfectedHosts1.size());
         finalInfectedHosts1.forEach(host -> {
           webClient.getAbs(String.format("http://%s:%d%s", Commons.LOCALHOST, host.topologyServicePort(), RaftCentralizedTopology.RAFT_STATE)).send(raftStateResp -> {
-            final String state = raftStateResp.result().bodyAsString();
-            log.info("State: '{}'. Host: '{}'", state, host.toString());
-            if (state.trim().equals(RaftStateName.LEADER.name())) {
-              leaders.incrementAndGet();
+            if (raftStateResp.succeeded()) {
+              final String state = raftStateResp.result().bodyAsString();
+              log.info("State: '{}'. Host: '{}'", state, host.toString());
+              if (state.trim().equals(RaftStateName.LEADER.name())) {
+                leaders.incrementAndGet();
+              }
+            } else {
+              log.error("status request failed", raftStateResp.failed());
             }
             statusResponses.countDown();
           });
