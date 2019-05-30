@@ -26,7 +26,7 @@ public class RaftLeaderNodeElectionTest extends Base {
 
   private static final Logger log = LoggerFactory.getLogger(RaftLeaderNodeElectionTest.class);
 
-  @Test
+  @Test(timeout = 60 * 1000 * 20)
   public void simple3NodesTest(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
     int n = 3;
@@ -34,7 +34,7 @@ public class RaftLeaderNodeElectionTest extends Base {
     runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
   }
 
-  @Test
+  @Test(timeout = 60 * 1000 * 20)
   public void simple5NodesTest(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
     int n = 5;
@@ -42,7 +42,7 @@ public class RaftLeaderNodeElectionTest extends Base {
     runLeaderTestOnNodesCount(testContext, n, leadersConfirmations);
   }
 
-  @Test
+  @Test(timeout = 60 * 1000 * 20)
   public void simple9NodesTest(TestContext testContext) throws InterruptedException {
     testContext.assertTrue(Commons.TEST_FILE_WITH_RAFT_VIRUS.exists(), "Test file with a virus should exists");
     int n = 9;
